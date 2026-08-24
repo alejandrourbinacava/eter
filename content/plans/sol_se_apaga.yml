@@ -1,0 +1,179 @@
+# Plan visual de «Qué Pasaría Si El Sol Se Apagara De Repente».
+#
+#   query     el sujeto concreto, para los archivos científicos (NASA SVS, NASA)
+#   generic   cuatro descripciones para los bancos de stock, sin nombres propios
+#   emphasis  la frase de remate sobre la que cae el golpe de sonido. Tiene que
+#             aparecer LITERAL en la escena; si no, se descarta el golpe.
+#
+# Los índices se corresponden con `python scripts/from_script.py guion.md --scenes`
+# y son estables porque el troceado es determinista.
+
+title: Qué Pasaría Si El Sol Se Apagara De Repente
+thumb_word: OSCURIDAD
+keyword: sun solar surface
+thumb_prompt: >-
+  The Sun going dark seen from Earth orbit, half the solar disc already black,
+  the terminator line racing across a blue planet below
+description: |-
+  ☀️ El Sol lleva ardiendo cuatro mil seiscientos millones de años sin una sola
+  interrupción. Está tan integrado en cada segundo de tu vida que ni siquiera lo
+  consideras una variable.
+
+  🌑 Si se apagara ahora mismo, no lo sabrías durante ocho minutos. Seguirías
+  viendo la luz de una estrella que ya no existe.
+
+  🧊 Y ocho minutos y un segundo después, la Tierra dejaría de orbitar nada.
+tags:
+  - sol
+  - qué pasaría si
+  - sistema solar
+  - astronomía
+  - espacio
+  - fotosíntesis
+  - glaciación
+  - documental espacial
+  - ciencia
+  - universo
+  - estrella
+  - tierra
+  - divulgación científica
+  - física
+  - curiosidades del espacio
+
+scenes:
+  0:
+    query: sun solar surface
+    generic: [sunlight through clouds, warm sunrise horizon, sun flare lens, bright sun sky]
+    emphasis: Es una constante.
+  1:
+    query: solar flare eruption
+    generic: [sun surface plasma, solar corona closeup, burning star surface, fire plasma texture]
+    emphasis: Como si alguien apagara un interruptor.
+  2:
+    query: sun earth distance
+    generic: [light beam through space, sun seen from space, distant star glow, space light rays]
+    emphasis: Estás viendo el Sol como era hace ocho minutos.
+  3:
+    query: night sky stars
+    generic: [blue sky daylight, starfield appearing night, dark sky stars, sunlight to shadow]
+    emphasis: En un segundo, habría luz.
+  4:
+    query: dying star space
+    generic: [fading star in space, dark empty space, dim distant star, black void stars]
+    emphasis: Como mirar una fotografía de alguien que ya no está.
+  5:
+    query: earth night lights
+    generic: [city lights at night, dark street lights, blackout dark city, dim artificial light]
+    emphasis: Sería el pánico.
+  6:
+    query: communication satellite orbit
+    generic: [satellite orbiting earth, solar panels in space, satellite dish night, orbital debris space]
+    emphasis: Pero todo eso, el pánico, el caos social, el colapso de comunicaciones, sería solo el primer capítulo de un proceso mucho más largo y mucho más devastador.
+  7:
+    query: earth ocean from space
+    generic: [ocean waves aerial, warm ocean surface, earth atmosphere limb, sea horizon dusk]
+    emphasis: El frío empezaría casi de inmediato.
+  8:
+    query: frozen river ice
+    generic: [river freezing ice, frozen field crops, ice forming water, winter frozen landscape]
+    emphasis: Pero el proceso sería implacable e irreversible.
+  9:
+    query: sea ice arctic
+    generic: [ocean ice forming, arctic sea ice aerial, frozen ocean surface, ice sheet cracks]
+    emphasis: Los océanos empezarían a congelarse desde la superficie hacia abajo.
+  10:
+    query: ice sheet glacier
+    generic: [vast glacier aerial, thick ice sheet, frozen wasteland wide, deep blue glacier ice]
+    emphasis: Una glaciación no gradual sino instantánea en términos geológicos, tan rápida que ninguna especie tendría tiempo de adaptarse evolutivamente.
+  11:
+    query: photosynthesis leaves
+    generic: [green leaves sunlight macro, forest canopy from below, plant leaves backlit, algae in water]
+    emphasis: Sería el fin de la fotosíntesis.
+  12:
+    query: dying plants drought
+    generic: [wilting plant timelapse, dead forest canopy, dry cracked earth plants, bare branches winter]
+    emphasis: Sin luz solar, las plantas mueren.
+  13:
+    query: empty warehouse storage
+    generic: [dark greenhouse artificial light, empty storage shelves, indoor farming lights, frozen field night]
+    emphasis: Pero los inventarios de alimentos almacenados tienen un límite.
+  14:
+    query: nuclear reactor cooling
+    generic: [nuclear power plant night, geothermal steam vents, industrial cooling towers, glowing reactor core]
+    emphasis: Son las únicas fuentes de energía que seguirían funcionando en un mundo sin estrella.
+  15:
+    query: earth magnetic field
+    generic: [aurora borealis from space, magnetic field lines abstract, molten metal flowing, earth core cutaway]
+    emphasis: El campo magnético terrestre.
+  16:
+    query: solar wind magnetosphere
+    generic: [aurora over earth night, charged particles abstract, solar wind stream, plasma flowing space]
+    emphasis: Pero hay una interacción que sí desaparecería inmediatamente.
+  17:
+    query: coronal mass ejection
+    generic: [solar eruption plasma, power grid night, electrical storm sky, sun flare closeup]
+    emphasis: Pero ese detalle apenas importa cuando la temperatura ha caído a cincuenta grados bajo cero y los sistemas de producción de alimentos han colapsado.
+  18:
+    query: deep ocean water
+    generic: [deep dark ocean water, underwater light rays, ocean depth abyss, cold sea surface]
+    emphasis: Pero en el fondo del océano, en los respiraderos hidrotermales, algo seguiría funcionando exactamente igual que antes.
+  19:
+    query: hydrothermal vent ocean floor
+    generic: [underwater hydrothermal vent, black smoker vent, deep sea floor dark, volcanic vent underwater]
+    emphasis: No dependen del Sol para nada.
+  20:
+    query: ice covered ocean
+    generic: [ice over dark water, underwater under ice, frozen ocean from below, blue ice cave water]
+    emphasis: La vida no desaparecería de la Tierra si el Sol se apagara.
+  21:
+    query: primordial earth ocean
+    generic: [bacteria microscopic abstract, dark warm water bubbles, ancient ocean floor, mineral formation water]
+    emphasis: La vida empezando de nuevo, desde abajo.
+  22:
+    query: nuclear power plant
+    generic: [reactor control room, industrial facility night, indoor grow lights, insulated shelter interior]
+    emphasis: ¿Podría sobrevivir la humanidad?
+  23:
+    query: iceland geothermal
+    generic: [geothermal steam field, volcanic hot spring, greenhouse artificial light, snow covered village night]
+    emphasis: Pero sobrevivir no significa prosperar.
+  24:
+    query: frozen city abandoned
+    generic: [abandoned frozen building, snow covered ruins, dark ice landscape, dim light in darkness]
+    emphasis: Pero en algún punto, sin la estrella que hizo posible todo lo que somos, el final sería inevitable.
+  25:
+    query: gravity spacetime curvature
+    generic: [gravity well abstract, spacetime grid warping, orbital mechanics animation, planet orbiting star]
+    emphasis: La gravedad del Sol no desaparecería.
+  26:
+    query: rogue planet interstellar
+    generic: [lone planet in dark space, planet drifting away, dark world no star, planet leaving orbit]
+    emphasis: Sería un planeta errante, exactamente como los que hemos descrito en otro momento, lanzado hacia la oscuridad del espacio interestelar sin ninguna estrella que lo ancle, viajando en línea recta hacia ningún lugar en particular a 30 kilómetros por segundo.
+  27:
+    query: solar system planets orbit
+    generic: [planets in a row space, planet drifting apart, solar system animation, planets scattering dark]
+    emphasis: El sistema solar, en el sentido de un conjunto de planetas organizados alrededor de una estrella, dejaría de existir ocho minutos después de que el Sol se apagara.
+  28:
+    query: red giant star
+    generic: [expanding star space, star aging animation, orange giant star, stellar evolution abstract]
+    emphasis: Eso es físicamente imposible.
+  29:
+    query: star formation nebula
+    generic: [gas cloud collapsing, nebula forming star, protostar dust cloud, cosmic gas swirling]
+    emphasis: Esa estrella lleva ardiendo desde entonces, sin interrupciones, sin que nadie se lo pidiera, sin que nadie lo agradeciera, produciendo cada segundo la energía que hace posible todo lo que conoces.
+  30:
+    query: earth habitable zone
+    generic: [earth from deep space, blue planet rotating, ocean evaporating heat, sun over earth limb]
+    emphasis: Estamos dentro de esa ventana ahora mismo.
+  31:
+    query: sun photosphere closeup
+    generic: [sunlight on skin macro, warm light through window, sun rays atmosphere, golden light particles]
+    emphasis: Que el Sol no es un decorado.
+  32:
+    query: sunset horizon earth
+    generic: [person watching sky silhouette, sunset over horizon, warm sunlight evening, sky at dusk]
+    emphasis: Mira el cielo.
+  33:
+    query: sunrise from space
+    generic: [sunrise over earth curve, first light horizon, warm sun rising, bright star in space]
+    emphasis: Todavía.

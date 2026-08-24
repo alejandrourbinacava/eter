@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import random
 import shutil
 import subprocess
@@ -165,3 +166,45 @@ def read_json(path: Path, default):
 def write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# --------------------------------------------------------------------------
+# Troceado en frases
+# --------------------------------------------------------------------------
+
+_SENTENCE = re.compile(r"[^.!?…]+[.!?…]+(?:\s|$)|[^.!?…]+$")
+# El punto de «300.000» y la coma de «11,2» no terminan una frase.
+_INSIDE_NUMBER = re.compile(r"(?<=\d)([.,])(?=\d)")
+# Centinelas del área de uso privado de Unicode: no aparecen en un guion.
+_DOT, _COMMA = "", ""
+
+
+def sentences(text: str) -> list[str]:
+    """Trocea en frases sin partir cifras ni perder texto.
+
+    El separador de millares hacía estragos: con el patrón a pelo, «La luz
+    viaja a 300.000 kilómetros por segundo» se partía en «La luz viaja a 300.»
+    y «000 kilómetros por segundo.», y como la primera mitad no encajaba con el
+    patrón (el punto no va seguido de espacio) se descartaba entera. El texto
+    desaparecía sin un solo aviso.
+    """
+    protected = _INSIDE_NUMBER.sub(
+        lambda m: _DOT if m.group(1) == "." else _COMMA, text
+    )
+    out = []
+    for part in _SENTENCE.findall(protected):
+        part = part.replace(_DOT, ".").replace(_COMMA, ",").strip()
+        if part:
+            out.append(part)
+    return out
+
+
+def assert_no_text_lost(original: str, pieces: list[str]) -> None:
+    """Comprueba que el troceado no se ha comido nada."""
+    norm = lambda s: re.sub(r"\s+", "", s)
+    before, after = len(norm(original)), len(norm(" ".join(pieces)))
+    if before != after:
+        raise RuntimeError(
+            f"El troceado en frases perdió texto: {before} caracteres antes, "
+            f"{after} después. Diferencia de {before - after}."
+        )

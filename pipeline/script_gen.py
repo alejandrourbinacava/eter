@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from anthropic import Anthropic
 
 from . import config
-from .util import log
+from .util import assert_no_text_lost, log, sentences
 
 _client: Anthropic | None = None
 
@@ -166,20 +166,18 @@ def _strip_stage_directions(text: str) -> str:
 # Paso 2 — troceado en escenas (local, determinista)
 # --------------------------------------------------------------------------
 
-_SENTENCE = re.compile(r"[^.!?…]+[.!?…]+(?:\s|$)|[^.!?…]+$")
-
-
 def _split_into_scenes(narration: str, words_per_scene: int) -> list[str]:
     """Agrupa frases completas en bloques de ~words_per_scene palabras.
 
     El corte va siempre en final de frase: un plano nunca cambia a mitad de una
     idea, y el TTS por escena no parte una entonación por la mitad.
     """
-    sentences = [s.strip() for s in _SENTENCE.findall(narration) if s.strip()]
+    frases = sentences(narration)
+    assert_no_text_lost(narration, frases)
     blocks: list[str] = []
     current: list[str] = []
     count = 0
-    for sentence in sentences:
+    for sentence in frases:
         current.append(sentence)
         count += len(sentence.split())
         if count >= words_per_scene:

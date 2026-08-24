@@ -93,6 +93,12 @@ VIDEO_PRESET = "medium"
 SHOT_MIN = 3.0
 SHOT_MAX = 6.0
 
+# Solo clips de vídeo. Con esto activado, el archivo fotográfico deja de ser
+# el último recurso antes del plano procedural: una imagen fija con
+# movimiento de cámara se distingue de un clip en cuanto se ve al lado de
+# uno, y rompe el ritmo del montaje.
+CLIPS_ONLY = os.getenv("ETER_CLIPS_ONLY", "1") not in ("0", "false", "no")
+
 # Patrón de duraciones que se recorre en bucle. Alternar largo y corto es lo
 # que da sensación de ritmo; una duración constante se percibe como plantilla.
 SHOT_RHYTHM = (5.5, 3.6, 4.8, 6.0, 3.2, 5.0, 4.2, 5.8, 3.8, 4.5)

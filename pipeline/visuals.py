@@ -176,12 +176,20 @@ _REJECT_WORDS = {
 }
 
 
-def _is_space_clip(text: str) -> bool:
-    """¿La descripción del clip sirve como plano de este canal?"""
+def _is_space_clip(text: str, query: str = "") -> bool:
+    """¿La descripción del clip sirve como plano de este canal?
+
+    Las exclusiones se levantan para lo que pide la propia búsqueda. Un bosque
+    normalmente no pinta nada en un documental espacial, pero si el guion habla
+    del fin de la fotosíntesis y la búsqueda dice «forest canopy», el bosque es
+    justo lo que hace falta. Lo mismo con «diver» en una escena de respiraderos
+    hidrotermales.
+    """
     words = _tokens(text)
-    if words & _REJECT_WORDS:
+    prohibidas = _REJECT_WORDS - _tokens(query)
+    if words & prohibidas:
         return False
-    return bool(words & (_SPACE_WORDS | _TEXTURE_WORDS))
+    return bool(words & (_SPACE_WORDS | _TEXTURE_WORDS | _tokens(query)))
 
 
 def _pexels(query: str, pool: AssetPool) -> str | None:
@@ -203,7 +211,7 @@ def _pexels(query: str, pool: AssetPool) -> str | None:
             continue
         # La descripción real del clip va en el slug de su URL.
         slug = str(video.get("url", "")).rstrip("/").rsplit("/", 1)[-1]
-        if not _is_space_clip(f"{slug} {video.get('alt', '')}"):
+        if not _is_space_clip(f"{slug} {video.get('alt', '')}", query):
             log.debug("  pexels descartado por fuera de tema: %s", slug[:52])
             continue
         files = [f for f in video.get("video_files", []) if (f.get("width") or 0) >= 1280]
@@ -231,7 +239,7 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
             continue
         if hit.get("duration", 0) < MIN_CLIP_SECONDS:
             continue
-        if not _is_space_clip(f"{hit.get('tags', '')} {hit.get('pageURL', '')}"):
+        if not _is_space_clip(f"{hit.get('tags', '')} {hit.get('pageURL', '')}", query):
             log.debug("  pixabay descartado por fuera de tema: %s", str(hit.get("tags"))[:52])
             continue
         streams = hit.get("videos", {})
@@ -540,6 +548,9 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
 
     # 5. Imagen fija de archivo, solo como relleno y con el sujeto concreto:
     #    para un objeto con nombre propio suele ser lo único que existe.
+    if config.CLIPS_ONLY:
+        return None
+
     for variant in specific:
         for _ in range(4):
             url = _nasa_image(variant, pool)
