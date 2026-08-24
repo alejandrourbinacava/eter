@@ -43,7 +43,7 @@ tags:
 scenes:
   0:
     query: sun solar surface
-    generic: [sunlight through clouds, warm sunrise horizon, sun flare lens, bright sun sky]
+    generic: [sun close up surface, sun rising over horizon, sunlight through clouds, bright sun in sky]
     emphasis: Es una constante.
   1:
     query: solar flare eruption
@@ -51,11 +51,11 @@ scenes:
     emphasis: Como si alguien apagara un interruptor.
   2:
     query: sun earth distance
-    generic: [light beam through space, sun seen from space, distant star glow, space light rays]
+    generic: [sun seen from space, sun and earth space, distant sun star, sun in dark space]
     emphasis: Estás viendo el Sol como era hace ocho minutos.
   3:
     query: night sky stars
-    generic: [blue sky daylight, starfield appearing night, dark sky stars, sunlight to shadow]
+    generic: [blue sky with sun, night sky full of stars, starry sky timelapse, sky darkening dusk]
     emphasis: En un segundo, habría luz.
   4:
     query: dying star space

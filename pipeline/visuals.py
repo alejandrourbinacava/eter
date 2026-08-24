@@ -185,6 +185,38 @@ _REJECT_WORDS = {
 }
 
 
+# Material de diseño, no metraje: capas para superponer, fondos de bucle,
+# destellos de lente. Los bancos los devuelven en cuanto pides algo con «light»
+# o «flare», y en pantalla son un degradado abstracto que no ilustra nada.
+_DESIGN_WORDS = {
+    "overlay", "leak", "leaks", "bokeh", "gradient", "backdrop", "background",
+    "wallpaper", "screensaver", "template", "transition", "vj", "loopable",
+    "seamless", "motiongraphics", "lensflare", "glitch", "grain", "texture",
+    "mockup", "presentation", "intro", "outro", "lowerthird",
+}
+
+# Palabras demasiado genéricas para demostrar por sí solas que un clip trata de
+# lo que se está diciendo.
+_WEAK_WORDS = {"light", "dark", "deep", "closeup", "macro", "abstract", "slow",
+               "beautiful", "stunning", "amazing", "background", "aerial",
+               "view", "footage", "video", "shot", "scene", "time", "lapse"}
+
+
+def _matches_query(text: str, query: str) -> bool:
+    """¿Este clip trata REALMENTE de lo que se ha buscado?
+
+    Es la regla que faltaba y la que más se nota. Antes bastaba con que la
+    descripción tuviera vocabulario de espacio, así que para «sun flare lens»
+    entraba un destello de lente abstracto mientras la narración decía «el Sol
+    está ahí». Ahora hace falta que comparta al menos una palabra con peso: si
+    buscas el Sol, el clip tiene que hablar del Sol.
+    """
+    wanted = _tokens(query) - _WEAK_WORDS
+    if not wanted:
+        return True
+    return bool(_tokens(text) & wanted)
+
+
 def _is_space_clip(text: str, query: str = "") -> bool:
     """¿La descripción del clip sirve como plano de este canal?
 
@@ -195,8 +227,12 @@ def _is_space_clip(text: str, query: str = "") -> bool:
     hidrotermales.
     """
     words = _tokens(text)
+    if words & _DESIGN_WORDS:
+        return False
     prohibidas = _REJECT_WORDS - _tokens(query)
     if words & prohibidas:
+        return False
+    if not _matches_query(text, query):
         return False
     return bool(words & (_SPACE_WORDS | _TEXTURE_WORDS | _tokens(query)))
 

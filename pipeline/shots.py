@@ -196,16 +196,28 @@ class ClipBank:
                 if served:
                     return served
 
-        # 3. Cualquier fuente de vídeo del banco con hueco libre, la menos usada
-        #    primero y sin repetir la anterior.
-        pool = [s for s in self._all if not s.is_image]
+        # 3. Otra vuelta sobre las fuentes DE ESTA BÚSQUEDA antes que tocar las
+        #    de otra escena. Repetir un encuadre del tema correcto es mucho menos
+        #    grave que enseñar algo que no tiene que ver con lo que se dice: si
+        #    la narración habla del Sol, en pantalla tiene que haber Sol aunque
+        #    el plano se parezca a otro anterior.
+        for source in sorted(mine, key=lambda s: s.laps):
+            start = source.rewind(want)
+            if start is not None:
+                self._budget[id(source)] = self._budget.get(id(source), 0) + 1
+                self._last = source
+                return source.path, start, source.is_image
+
+        # 4. Solo ahora, material de otras búsquedas.
+        log.debug("  «%s» sin material propio, se recurre al banco general", query[:38])
+        pool = [s for s in self._all if not s.is_image and s not in mine]
         for candidates in ([s for s in pool if s is not self._last], pool):
             for source in sorted(candidates, key=lambda s: self._budget.get(id(s), 0)):
                 served = self._serve(source, want)
                 if served:
                     return served
 
-        # 4. Imágenes de relleno, si es que hay.
+        # 5. Imágenes de relleno, si es que hay.
         for source in sorted(
             (s for s in self._all if s.is_image), key=lambda s: self._budget.get(id(s), 0)
         ):
@@ -213,8 +225,7 @@ class ClipBank:
             if served:
                 return served
 
-        # 5. Segunda vuelta desfasada sobre lo que haya, ya sin tope: llegados
-        #    aquí, repetir encuadres es mejor que dejar el plano en negro.
+        # 6. Última vuelta sobre lo que haya, ya sin tope.
         for source in sorted(self._all, key=lambda s: (s.is_image, s.laps)):
             start = source.rewind(want)
             if start is not None:
