@@ -25,11 +25,25 @@ from . import config, inspect_media
 from .util import ffmpeg, log, probe_duration
 
 
+# Los archivos científicos mezclan imagen buena con láminas y esquemas, así que
+# se les aplica el control estricto. Los bancos de stock y tu biblioteca son
+# material curado: ahí solo interesa detectar rótulos, no exigir que el plano
+# sea oscuro.
+_STRICT_PREFIXES = ("svs_", "nasa-video_", "nasa-img_")
+
+
+def _needs_strict_qc(path: Path) -> bool:
+    return path.name.startswith(_STRICT_PREFIXES)
+
+
 @dataclass
 class Shot:
     scene_index: int
     index: int
     duration: float
+    # Búsqueda concreta de ESTE plano, no de su escena. Una escena ocupa unos
+    # ocho planos y rota entre las búsquedas que le dio el guionista.
+    query: str = ""
     source: Path | None = None
     source_start: float = 0.0
     is_image: bool = False
@@ -90,6 +104,11 @@ class ClipBank:
     puede avisar en vez de disimular.
     """
 
+    # Cuántas fuentes distintas se intentan reunir por búsqueda antes de empezar
+    # a repartir. Con una sola, los planos consecutivos salen de ventanas
+    # contiguas del mismo clip y se parecen tanto que el corte no se nota.
+    SOURCES_PER_QUERY = 3
+
     def __init__(self, fetch, max_share: float = 0.22) -> None:
         # fetch(query) -> (Path, is_image) | None
         self._fetch = fetch
@@ -99,6 +118,7 @@ class ClipBank:
         self._max_share = max_share
         self._budget: dict[int, int] = {}
         self._total_shots = 0
+        self._last: Source | None = None
 
     def set_total_shots(self, total: int) -> None:
         """Fija cuántos planos hay que servir, para calcular el tope."""
@@ -126,7 +146,9 @@ class ClipBank:
 
         clean: list[list[float]] = []
         if not is_image:
-            clean = inspect_media.clean_windows(path, duration, config.SHOT_MIN)
+            clean = inspect_media.clean_windows(
+                path, duration, config.SHOT_MIN, strict=_needs_strict_qc(path)
+            )
             if not clean:
                 log.debug("  %s descartado: ningún tramo limpio", path.name[:40])
                 return None
@@ -139,46 +161,65 @@ class ClipBank:
         self._all.append(source)
         return source
 
+    def _serve(self, source: Source, want: float) -> tuple[Path, float, bool] | None:
+        if not self._charge(source):
+            return None
+        start = source.take(want)
+        if start is None:
+            self._budget[id(source)] -= 1
+            return None
+        self._last = source
+        return source.path, start, source.is_image
+
     def segment(self, query: str, want: float) -> tuple[Path, float, bool] | None:
         """Un trozo sin usar de `want` segundos para esta búsqueda."""
-        # 1. Ventana libre en una fuente que ya tenemos para esta búsqueda.
-        for source in self._by_query.get(query, []):
-            if not self._charge(source):
-                continue
-            start = source.take(want)
-            if start is not None:
-                return source.path, start, source.is_image
-            self._budget[id(source)] -= 1
-
-        # 2. Traer una fuente nueva para esta búsqueda.
-        if query not in self._exhausted:
+        # 1. Reunir variedad antes de repartir: mientras esta búsqueda no tenga
+        #    unas cuantas fuentes propias, se trae otra.
+        mine = self._by_query.setdefault(query, [])
+        if len(mine) < self.SOURCES_PER_QUERY and query not in self._exhausted:
             got = self._fetch(query)
             if got:
-                path, is_image = got
-                source = self._add(query, path, is_image)
-                if source is not None and self._charge(source):
-                    start = source.take(want)
-                    if start is not None:
-                        return source.path, start, source.is_image
-                    self._budget[id(source)] -= 1
+                self._add(query, *got)
             else:
                 self._exhausted.add(query)
+            mine = self._by_query.get(query, [])
 
-        # 3. Cualquier fuente de vídeo del banco con hueco libre.
-        for source in sorted(self._all, key=lambda s: (s.is_image, self._budget.get(id(s), 0))):
-            if source.is_image or not self._charge(source):
-                continue
-            start = source.take(want)
-            if start is not None:
-                return source.path, start, False
-            self._budget[id(source)] -= 1
+        # 2. Repartir entre las fuentes de esta búsqueda, evitando repetir la
+        #    del plano anterior: dos ventanas contiguas del mismo clip se
+        #    parecen tanto que el corte pasa desapercibido.
+        for candidates in (
+            [s for s in mine if s is not self._last],
+            mine,
+        ):
+            for source in sorted(candidates, key=lambda s: self._budget.get(id(s), 0)):
+                served = self._serve(source, want)
+                if served:
+                    return served
 
-        # 4. Segunda vuelta desfasada sobre lo que haya, ya sin tope: llegados
+        # 3. Cualquier fuente de vídeo del banco con hueco libre, la menos usada
+        #    primero y sin repetir la anterior.
+        pool = [s for s in self._all if not s.is_image]
+        for candidates in ([s for s in pool if s is not self._last], pool):
+            for source in sorted(candidates, key=lambda s: self._budget.get(id(s), 0)):
+                served = self._serve(source, want)
+                if served:
+                    return served
+
+        # 4. Imágenes de relleno, si es que hay.
+        for source in sorted(
+            (s for s in self._all if s.is_image), key=lambda s: self._budget.get(id(s), 0)
+        ):
+            served = self._serve(source, want)
+            if served:
+                return served
+
+        # 5. Segunda vuelta desfasada sobre lo que haya, ya sin tope: llegados
         #    aquí, repetir encuadres es mejor que dejar el plano en negro.
         for source in sorted(self._all, key=lambda s: (s.is_image, s.laps)):
             start = source.rewind(want)
             if start is not None:
                 self._budget[id(source)] = self._budget.get(id(source), 0) + 1
+                self._last = source
                 return source.path, start, source.is_image
 
         return None
@@ -325,12 +366,20 @@ def _image_shot(shot: Shot, dest: Path) -> None:
 
 
 def _filler_shot(shot: Shot, dest: Path) -> None:
-    """Campo de estrellas en deriva. Que no se caiga el render, nada más."""
+    """Campo de estrellas en deriva. Que no se caiga el render, nada más.
+
+    El `-t` es obligatorio aquí: `zoompan` emite `d` fotogramas por cada
+    fotograma de entrada, así que sobre una fuente sintética de 165 fotogramas
+    con d=165 salían 27.225, o sea 907 segundos. Colado como primer plano del
+    vídeo, el `-shortest` del montaje final hacía que la pieza entera fuese ese
+    campo de estrellas.
+    """
     seed = shot.scene_index * 100 + shot.index
     drift = 0.0012 + 0.0004 * (seed % 3)
     ffmpeg([
         "-f", "lavfi",
         "-i", f"nullsrc=s={config.WIDTH}x{config.HEIGHT}:r={config.FPS}:d={shot.duration:.3f}",
+        "-t", f"{shot.duration:.3f}",
         "-vf",
         (
             f"geq=random({seed % 97 + 1})*255:128:128,"
@@ -348,6 +397,9 @@ def _filler_shot(shot: Shot, dest: Path) -> None:
     ])
 
 
+MAX_DURATION_DRIFT = 0.35
+
+
 def render_shot(shot: Shot, dest: Path, autocrop: str = "") -> Path:
     if shot.source is None:
         _filler_shot(shot, dest)
@@ -355,6 +407,20 @@ def render_shot(shot: Shot, dest: Path, autocrop: str = "") -> Path:
         _image_shot(shot, dest)
     else:
         _video_shot(shot, dest, autocrop)
+
+    # Guardia barata que cuesta un ffprobe y ahorra un desastre silencioso. Un
+    # plano que sale con la duración equivocada no se nota al mirarlo: se nota
+    # tres pasos después, cuando el montaje entero mide lo que no debe.
+    actual = probe_duration(dest)
+    if abs(actual - shot.duration) > MAX_DURATION_DRIFT:
+        log.warning(
+            "El plano %s salió de %.1f s en vez de %.1f s; se recorta",
+            dest.name, actual, shot.duration,
+        )
+        trimmed = dest.with_suffix(".trim.mp4")
+        ffmpeg(["-i", str(dest), "-t", f"{shot.duration:.3f}", "-c", "copy", str(trimmed)])
+        trimmed.replace(dest)
+
     shot.path = dest
     return dest
 
@@ -367,20 +433,43 @@ def render_shot(shot: Shot, dest: Path, autocrop: str = "") -> Path:
 def concat_scene(shot_paths: list[Path], dest: Path, listing: Path) -> Path:
     """Une los planos de una escena con corte seco.
 
-    Se intenta primero copiando los flujos, que es casi instantáneo. Todos los
-    planos se codifican con los mismos parámetros justo para que esto funcione;
-    si aun así el demuxer se queja, se recodifica.
+    Usa el FILTRO `concat`, no el demuxer, y regenera las marcas de tiempo a
+    partir del índice de fotograma. Es más caro —recodifica— pero es la única
+    forma que da un resultado correcto.
+
+    El demuxer `concat` con `-c copy` es instantáneo y produce un fichero cuya
+    duración declarada es la correcta, así que parece que funciona. Pero deja
+    marcas de tiempo irregulares en las costuras, y eso rompe `xfade` más
+    adelante sin dar ni un aviso: encadenar dos escenas con un desplazamiento de
+    5 s devolvía 48,1 s en vez de 43,2. Recodificar el mismo material con el
+    demuxer tampoco vale, porque descarta fotogramas en las costuras —una escena
+    de 35,0 s salía de 29,7—. El filtro trabaja sobre fotogramas ya decodificados
+    y da la duración exacta.
     """
     listing.write_text(
         "\n".join(f"file '{p.as_posix()}'" for p in shot_paths), encoding="utf-8"
     )
-    try:
-        ffmpeg(["-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", str(dest)])
-    except RuntimeError:
-        log.debug("  concat sin recodificar falló, se recodifica la escena")
-        ffmpeg([
-            "-f", "concat", "-safe", "0", "-i", str(listing),
+
+    inputs: list[str] = []
+    prep: list[str] = []
+    for i, path in enumerate(shot_paths):
+        inputs += ["-i", str(path)]
+        prep.append(f"[{i}:v]fps={config.FPS},format=yuv420p,setsar=1[c{i}]")
+
+    chain = "".join(f"[c{i}]" for i in range(len(shot_paths)))
+    graph = (
+        ";".join(prep)
+        + f";{chain}concat=n={len(shot_paths)}:v=1:a=0,setpts=N/FRAME_RATE/TB[out]"
+    )
+
+    ffmpeg(
+        inputs
+        + [
+            "-filter_complex", graph,
+            "-map", "[out]", "-an",
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-            "-pix_fmt", "yuv420p", str(dest),
-        ])
+            "-pix_fmt", "yuv420p", "-video_track_timescale", "30000",
+            str(dest),
+        ]
+    )
     return dest

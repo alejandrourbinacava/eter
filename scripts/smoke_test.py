@@ -58,11 +58,25 @@ de millones de años por delante, es exactamente la lista de ingredientes que en
 la Tierra bastó una vez. Una sola vez, que sepamos.\
 """
 
+# (sujeto concreto para los archivos científicos, descripción genérica para los
+# bancos de stock, prompt por si hubiera que generar el plano)
 VISUALS = [
-    ("europa jupiter moon", "Photorealistic view of Europa's cracked icy surface"),
-    ("galileo spacecraft jupiter", "A spacecraft passing above a fractured ice moon"),
-    ("io volcanic moon", "Tidal flexing of a moon lit by an enormous gas giant"),
-    ("europa clipper mission", "A probe approaching an ice-covered ocean world"),
+    ("Europa Jupiter moon",
+     ["cracked ice texture", "frozen planet in space", "deep dark ocean water",
+      "icy surface closeup"],
+     "Photorealistic view of Europa's cracked icy surface"),
+    ("Galileo spacecraft Jupiter",
+     ["spacecraft in deep space", "satellite orbiting planet", "gas giant clouds",
+      "magnetic field aurora"],
+     "A spacecraft passing above a fractured ice moon"),
+    ("Io volcanic moon",
+     ["volcanic eruption lava", "gas giant in space", "molten rock glowing",
+      "planet orbiting star"],
+     "Tidal flexing of a moon lit by an enormous gas giant"),
+    ("Europa Clipper mission",
+     ["probe flying through space", "underwater hydrothermal vent", "ice cave blue",
+      "distant sun in space"],
+     "A probe approaching an ice-covered ocean world"),
 ]
 
 
@@ -72,7 +86,8 @@ def main() -> int:
 
     blocks = [b.strip().replace("\n", " ") for b in NARRATION.split("\n\n") if b.strip()]
     scenes = [
-        Scene(index=i, narration=b, visual_query=VISUALS[i][0], visual_prompt=VISUALS[i][1])
+        Scene(index=i, narration=b, visual_query=VISUALS[i][0],
+              visual_generic=VISUALS[i][1], visual_prompt=VISUALS[i][2])
         for i, b in enumerate(blocks)
     ]
 

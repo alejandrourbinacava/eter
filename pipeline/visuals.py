@@ -3,28 +3,35 @@
 Este módulo consigue las FUENTES; el troceado en planos de seis segundos y el
 ritmo de montaje viven en `shots.py`.
 
-La base del vídeo son clips. La cascada, de mejor a peor:
+La base del vídeo son clips, y cada plano se enruta según lo que pida.
 
-  1. Biblioteca  — tus propios clips en `library/`, incluidos los que generes a
-                   mano en Google Labs/Flow, Runway o donde sea. Prioridad
-                   absoluta. Ver `library/README.md`.
-  2. Pexels      — vídeo de stock cinematográfico. Clave gratuita.
-  3. Pixabay     — ídem. Clave gratuita.
-  4. NASA SVS    — Scientific Visualization Studio. Sin clave. Es el mejor
-                   archivo gratuito para este canal: animación científica pura,
-                   sin rótulos ni ruedas de prensa, y con piezas de 30 a 90
-                   segundos de las que salen diez o quince planos distintos.
-  5. NASA vídeo  — la biblioteca general, filtrada. Red de seguridad.
-  6. NASA imagen — SOLO relleno de emergencia, cuando ninguna fuente de vídeo
-                   tiene nada. Se trocea igual, en planos de seis segundos con
-                   movimiento de cámara.
+ESPECÍFICO — un objeto con nombre propio: Encélado, la Europa Clipper, Sgr A*.
+  Va a los archivos científicos, que son los únicos que tienen la cosa concreta:
+  biblioteca propia, NASA SVS, biblioteca general de la NASA y, como relleno, su
+  archivo fotográfico.
 
-Dos filtros hacen el trabajo de calidad. Uno descarta por metadatos las piezas
-de comunicación del archivo de la NASA: sin él se cuelan cabeceras animadas,
-rótulos «LIVE INTERACTIVE» y salas de control. El otro, `_looks_like_space()`,
-mira el histograma y tira las láminas científicas con texto quemado, que la
-búsqueda por metadatos no detecta: una foto astronómica real es casi toda
-negra, una figura con rótulos tiene fondo claro.
+GENÉRICO — lo que se ve, sin nombrarlo: «icy moon surface», «accretion disk».
+  Va a los bancos de stock, que tienen decenas de miles de planos de espacio
+  buenos pero anónimos.
+
+El guionista entrega las dos búsquedas por escena (`visual_query` y
+`visual_generic`) precisamente para poder separarlas aquí. Nunca al revés:
+mandar un nombre propio a un banco de stock es lo peor que se puede hacer,
+porque no devuelve cero sino lo que más se le parece por letras. Medido con
+estas mismas claves: «great red spot» devuelve un pájaro carpintero, «kinman
+dwarf» un hámster y «europa clipper» un velero.
+
+Tres filtros sostienen la calidad:
+
+  `_is_space_clip`   exige que la descripción del clip de banco contenga
+                     vocabulario de espacio. Es lo que mata al hámster.
+  `_svs`             restringe el SVS a `Visualization`, `Animation` y `B-Roll`,
+                     y exige solape de palabras con la búsqueda. Sin lo primero
+                     entran piezas divulgativas con presentador y rótulos; sin
+                     lo segundo, diagramas de satélites para consultas de Europa.
+  `inspect_media`    muestrea fotogramas y marca los tramos limpios de cada
+                     clip, porque una misma pieza puede tener cuarenta segundos
+                     de imagen preciosa y quince de gráficas con texto.
 
 Ningún material entra en el vídeo sin ser de dominio público (NASA/ESA), de
 licencia libre para uso comercial (Pexels, Pixabay) o tuyo (biblioteca).
@@ -115,6 +122,32 @@ def _library(query: str, pool: AssetPool) -> Path | None:
     return best
 
 
+# Vocabulario que debe aparecer en la descripción de un clip de banco para que
+# lo demos por bueno.
+#
+# Los bancos de stock NUNCA devuelven cero resultados: si no tienen lo que pides
+# devuelven lo que más se parezca por letras. Comprobado con esta misma clave:
+# «great red spot» devuelve un pájaro carpintero (great spotted woodpecker),
+# «kinman dwarf» un hámster enano, «europa clipper» un velero de cinco mástiles
+# y «wow signal» un teléfono GSM. Sin este filtro todo eso entraría en el vídeo.
+_SPACE_WORDS = {
+    "space", "cosmic", "cosmos", "galaxy", "galactic", "nebula", "star", "stars",
+    "starry", "starfield", "stellar", "planet", "planetary", "moon", "lunar",
+    "orbit", "orbital", "astronaut", "universe", "celestial", "solar", "sun",
+    "asteroid", "comet", "meteor", "meteorite", "aurora", "satellite", "spaceship",
+    "spacecraft", "rocket", "milky", "astronomy", "astronomical", "telescope",
+    "supernova", "blackhole", "eclipse", "constellation", "sky", "night",
+    "earth", "mars", "jupiter", "saturn", "venus", "mercury", "neptune", "uranus",
+    "pluto", "interstellar", "deepspace", "atmosphere", "crater", "surface",
+    "particles", "energy", "plasma", "gravity", "horizon", "void", "abstract",
+}
+
+
+def _is_space_clip(text: str) -> bool:
+    """¿La descripción del clip habla realmente de espacio?"""
+    return bool(_tokens(text) & _SPACE_WORDS)
+
+
 def _pexels(query: str, pool: AssetPool) -> str | None:
     if not config.PEXELS_API_KEY:
         return None
@@ -123,7 +156,7 @@ def _pexels(query: str, pool: AssetPool) -> str | None:
             "GET",
             "https://api.pexels.com/videos/search",
             headers={"Authorization": config.PEXELS_API_KEY},
-            params={"query": query, "per_page": 15, "orientation": "landscape", "size": "medium"},
+            params={"query": query, "per_page": 20, "orientation": "landscape"},
         )
     except RuntimeError:
         return None
@@ -131,6 +164,11 @@ def _pexels(query: str, pool: AssetPool) -> str | None:
         if not pool.take(f"pexels:{video['id']}"):
             continue
         if video.get("duration", 0) < MIN_CLIP_SECONDS:
+            continue
+        # La descripción real del clip va en el slug de su URL.
+        slug = str(video.get("url", "")).rstrip("/").rsplit("/", 1)[-1]
+        if not _is_space_clip(f"{slug} {video.get('alt', '')}"):
+            log.debug("  pexels descartado por fuera de tema: %s", slug[:52])
             continue
         files = [f for f in video.get("video_files", []) if (f.get("width") or 0) >= 1280]
         if not files:
@@ -147,7 +185,8 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
         r = http(
             "GET",
             "https://pixabay.com/api/videos/",
-            params={"key": config.PIXABAY_API_KEY, "q": query, "per_page": 20, "safesearch": "true"},
+            params={"key": config.PIXABAY_API_KEY, "q": query, "per_page": 30,
+                    "safesearch": "true"},
         )
     except RuntimeError:
         return None
@@ -155,6 +194,9 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
         if not pool.take(f"pixabay:{hit['id']}"):
             continue
         if hit.get("duration", 0) < MIN_CLIP_SECONDS:
+            continue
+        if not _is_space_clip(f"{hit.get('tags', '')} {hit.get('pageURL', '')}"):
+            log.debug("  pixabay descartado por fuera de tema: %s", str(hit.get("tags"))[:52])
             continue
         streams = hit.get("videos", {})
         for quality in ("large", "medium", "small"):
@@ -379,24 +421,55 @@ def _autocrop(src: Path) -> str:
 # --------------------------------------------------------------------------
 
 
-def _fetch_source(query: str, pool: AssetPool, raw_dir: Path, stats: dict):
-    """Baja UN material nuevo para esta búsqueda. Devuelve (ruta, es_imagen).
+def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stats: dict):
+    """Baja UN material nuevo. Devuelve (ruta, es_imagen) o None.
 
-    Prioridad absoluta al vídeo: la base del montaje son clips. La imagen fija
-    solo aparece cuando ninguna de las cinco fuentes de vídeo tiene nada, y aun
-    entonces se trocea en planos de seis segundos como cualquier otro material.
+    El enrutado es lo importante. Un plano de Éter puede pedir dos cosas muy
+    distintas y cada una tiene su fuente:
+
+    ESPECÍFICO — «Enceladus geysers», «Europa Clipper», «Sagittarius A star».
+      Va a los archivos científicos, que son los únicos que tienen la cosa
+      concreta. Si no la tienen, no la tiene nadie.
+
+    GENÉRICO — «icy moon surface», «spacecraft in deep space», «accretion disk».
+      Va a los bancos de stock, que tienen decenas de miles de planos de
+      espacio bonitos pero anónimos.
+
+    Nunca al revés. Mandar un nombre propio a un banco de stock es la peor
+    opción posible, porque no devuelve cero: devuelve lo que más se le parece
+    por letras. Con esta misma clave, «great red spot» devuelve un pájaro
+    carpintero y «kinman dwarf» un hámster.
     """
-    variants = list(dict.fromkeys([query, " ".join(query.split()[:2]), query.split()[0]]))
     counter = len(list(raw_dir.glob("*")))
+    specific = list(dict.fromkeys([q for q in (query, " ".join(query.split()[:2])) if q]))
+    broad = list(dict.fromkeys([g for g in (generic, " ".join(generic.split()[:2])) if g]))
 
-    # Tus propios clips, primero.
-    own = _library(query, pool)
-    if own is not None:
-        stats["biblioteca"] += 1
-        return own, False
+    # 1. Tus propios clips: se prueban con las dos búsquedas.
+    for term in specific + broad:
+        own = _library(term, pool)
+        if own is not None:
+            stats["biblioteca"] += 1
+            return own, False
 
-    for variant in variants:
-        for name, finder in (("pexels", _pexels), ("pixabay", _pixabay), ("svs", _svs)):
+    # 2. Archivos científicos, con el sujeto concreto.
+    for variant in specific:
+        url = _svs(variant, pool)
+        if not url:
+            continue
+        dest = raw_dir / f"svs_{counter:03d}.mp4"
+        try:
+            download(url, dest, max_bytes=MAX_CLIP_BYTES)
+        except Exception as exc:
+            log.debug("  descarga fallida (svs): %s", exc)
+            continue
+        if dest.stat().st_size > 200_000 and _has_video_stream(dest):
+            stats["svs"] += 1
+            log.debug("  fuente <- svs '%s'", variant)
+            return dest, False
+
+    # 3. Bancos de stock, con la descripción genérica.
+    for variant in broad:
+        for name, finder in (("pexels", _pexels), ("pixabay", _pixabay)):
             url = finder(variant, pool)
             if not url:
                 continue
@@ -412,7 +485,10 @@ def _fetch_source(query: str, pool: AssetPool, raw_dir: Path, stats: dict):
                 log.debug("  fuente <- %s '%s'", name, variant)
                 return dest, False
 
-    for variant in variants:
+    # 4. Biblioteca general de vídeo de la NASA. Va la última de las fuentes de
+    #    vídeo porque es la más floja: aunque el filtro quita las ruedas de
+    #    prensa, lo que queda son piezas institucionales, no plano de recurso.
+    for variant in specific:
         url = _nasa_video(variant, pool)
         if not url:
             continue
@@ -426,8 +502,9 @@ def _fetch_source(query: str, pool: AssetPool, raw_dir: Path, stats: dict):
             log.debug("  fuente <- nasa-video '%s'", variant)
             return dest, False
 
-    # Último recurso, y solo si no hay ni un clip disponible.
-    for variant in variants:
+    # 5. Imagen fija de archivo, solo como relleno y con el sujeto concreto:
+    #    para un objeto con nombre propio suele ser lo único que existe.
+    for variant in specific:
         for _ in range(4):
             url = _nasa_image(variant, pool)
             if not url:
@@ -464,13 +541,26 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
     if library_index():
         log.info("Biblioteca local: %d clips propios disponibles", len(library_index()))
 
-    bank = shots.ClipBank(lambda q: _fetch_source(q, pool, raw_dir, stats))
     plan = shots.plan(scenes)
-    bank.set_total_shots(len(plan))
-    by_query = {s.index: (s.visual_query or "deep space") for s in scenes}
 
-    log.info("Montaje: %d planos de %.0f-%.0f s para %d escenas",
-             len(plan), config.SHOT_MIN, config.SHOT_MAX, len(scenes))
+    # Cada plano recibe una de las búsquedas genéricas de su escena, rotando.
+    # `subjects` recuerda a qué sujeto concreto pertenece cada una, para poder
+    # enrutarla luego a los archivos científicos.
+    subjects: dict[str, str] = {}
+    by_scene = {s.index: s for s in scenes}
+    for shot in plan:
+        scene = by_scene[shot.scene_index]
+        options = list(scene.visual_generic) or [scene.visual_query or "deep space stars"]
+        shot.query = options[shot.index % len(options)]
+        subjects.setdefault(shot.query, scene.visual_query or shot.query)
+
+    bank = shots.ClipBank(
+        lambda q: _fetch_source(subjects.get(q, q), q, pool, raw_dir, stats)
+    )
+    bank.set_total_shots(len(plan))
+
+    log.info("Montaje: %d planos de %.0f-%.0f s para %d escenas, %d búsquedas distintas",
+             len(plan), config.SHOT_MIN, config.SHOT_MAX, len(scenes), len(subjects))
 
     autocrops: dict[str, str] = {}
     fillers = 0
@@ -481,7 +571,7 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
             shot.path = dest
             continue
 
-        got = bank.segment(by_query[shot.scene_index], shot.duration)
+        got = bank.segment(shot.query, shot.duration)
         if got:
             shot.source, shot.source_start, shot.is_image = got
         else:

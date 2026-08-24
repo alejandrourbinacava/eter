@@ -1,0 +1,77 @@
+{
+  "topic": {
+    "title_hint": "smoke-test",
+    "keyword": "europa jupiter moon"
+  },
+  "title": "El Océano De Europa Tiene Más Agua Que Toda La Tierra",
+  "thumb_word": "OCÉANO",
+  "description": "Prueba de humo.",
+  "tags": [
+    "europa",
+    "júpiter",
+    "océano"
+  ],
+  "narration": "Bajo la superficie de Europa hay más agua líquida que en todos los océanos de la Tierra juntos. No es una estimación optimista ni una hipótesis de trabajo. Es la conclusión a la que llevan tres décadas de mediciones, y sigue siendo uno de los datos que peor encajan con la idea que tenemos del sistema solar. Europa es una luna de Júpiter más pequeña que la nuestra. Está a 628 millones de kilómetros del Sol, en un sitio donde la luz llega tan débil que la temperatura de la superficie no sube de los ciento sesenta grados bajo cero. Debería ser una bola de hielo muerta. Pero hay algo que el hielo no puede esconder. Cuando la sonda Galileo pasó cerca en los años noventa, su magnetómetro detectó un campo magnético inducido. Para que eso ocurra hace falta una capa conductora bajo la corteza. Agua salada. Mucha. Los modelos actuales sitúan ese océano bajo entre quince y veinticinco kilómetros de hielo, con una profundidad de unos cien kilómetros. La Tierra, con toda su superficie cubierta de mar, tiene océanos de cuatro kilómetros de profundidad media. Europa tiene el doble de agua líquida que un planeta entero que se llama, precisamente, el planeta azul. Y el agua sola no basta. Lo que convierte a Europa en el sitio más incómodo del sistema solar es de dónde sale el calor que la mantiene líquida. No viene del Sol. Viene de Júpiter. La órbita de Europa es ligeramente excéntrica, así que la gravedad del gigante la estira y la comprime en cada vuelta. Esa deformación constante genera fricción interna, y la fricción genera calor. Es el mismo mecanismo que hace de Ío el cuerpo más volcánico que conocemos. En Europa, ese calor no llega a fundir la superficie, pero sí es suficiente para sostener un océano durante miles de millones de años. Sin una estrella cerca. Sin luz. Lo que no sabemos es lo que hay dentro. No hemos visto ese océano. No hemos medido su salinidad, ni su química, ni si el fondo tiene actividad hidrotermal como la que en la Tierra alimenta ecosistemas enteros sin necesidad de sol. Europa Clipper lleva desde 2024 camino de averiguarlo y no llegará hasta 2030. Cuarenta y nueve sobrevuelos para medir el grosor del hielo y la composición de lo que hay debajo. Ni siquiera va a aterrizar. Y aún así, cuando terminen esos sobrevuelos, seguiremos sin saber lo único que de verdad queremos saber. Porque un océano de cien kilómetros de profundidad, con energía, con sales y con miles de millones de años por delante, es exactamente la lista de ingredientes que en la Tierra bastó una vez. Una sola vez, que sepamos.",
+  "scenes": [
+    {
+      "index": 0,
+      "narration": "Bajo la superficie de Europa hay más agua líquida que en todos los océanos de la Tierra juntos. No es una estimación optimista ni una hipótesis de trabajo. Es la conclusión a la que llevan tres décadas de mediciones, y sigue siendo uno de los datos que peor encajan con la idea que tenemos del sistema solar. Europa es una luna de Júpiter más pequeña que la nuestra. Está a 628 millones de kilómetros del Sol, en un sitio donde la luz llega tan débil que la temperatura de la superficie no sube de los ciento sesenta grados bajo cero. Debería ser una bola de hielo muerta.",
+      "visual_query": "Europa Jupiter moon",
+      "visual_generic": [
+        "cracked ice texture",
+        "frozen planet in space",
+        "deep dark ocean water",
+        "icy surface closeup"
+      ],
+      "visual_prompt": "Photorealistic view of Europa's cracked icy surface",
+      "audio_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\audio\\scene_000.mp3",
+      "clip_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\scenes\\scene_000.mp4",
+      "duration": 33.959184
+    },
+    {
+      "index": 1,
+      "narration": "Pero hay algo que el hielo no puede esconder. Cuando la sonda Galileo pasó cerca en los años noventa, su magnetómetro detectó un campo magnético inducido. Para que eso ocurra hace falta una capa conductora bajo la corteza. Agua salada. Mucha. Los modelos actuales sitúan ese océano bajo entre quince y veinticinco kilómetros de hielo, con una profundidad de unos cien kilómetros. La Tierra, con toda su superficie cubierta de mar, tiene océanos de cuatro kilómetros de profundidad media. Europa tiene el doble de agua líquida que un planeta entero que se llama, precisamente, el planeta azul.",
+      "visual_query": "Galileo spacecraft Jupiter",
+      "visual_generic": [
+        "spacecraft in deep space",
+        "satellite orbiting planet",
+        "gas giant clouds",
+        "magnetic field aurora"
+      ],
+      "visual_prompt": "A spacecraft passing above a fractured ice moon",
+      "audio_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\audio\\scene_001.mp3",
+      "clip_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\scenes\\scene_001.mp4",
+      "duration": 37.146122
+    },
+    {
+      "index": 2,
+      "narration": "Y el agua sola no basta. Lo que convierte a Europa en el sitio más incómodo del sistema solar es de dónde sale el calor que la mantiene líquida. No viene del Sol. Viene de Júpiter. La órbita de Europa es ligeramente excéntrica, así que la gravedad del gigante la estira y la comprime en cada vuelta. Esa deformación constante genera fricción interna, y la fricción genera calor. Es el mismo mecanismo que hace de Ío el cuerpo más volcánico que conocemos. En Europa, ese calor no llega a fundir la superficie, pero sí es suficiente para sostener un océano durante miles de millones de años. Sin una estrella cerca. Sin luz.",
+      "visual_query": "Io volcanic moon",
+      "visual_generic": [
+        "volcanic eruption lava",
+        "gas giant in space",
+        "molten rock glowing",
+        "planet orbiting star"
+      ],
+      "visual_prompt": "Tidal flexing of a moon lit by an enormous gas giant",
+      "audio_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\audio\\scene_002.mp3",
+      "clip_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\scenes\\scene_002.mp4",
+      "duration": 38.635102
+    },
+    {
+      "index": 3,
+      "narration": "Lo que no sabemos es lo que hay dentro. No hemos visto ese océano. No hemos medido su salinidad, ni su química, ni si el fondo tiene actividad hidrotermal como la que en la Tierra alimenta ecosistemas enteros sin necesidad de sol. Europa Clipper lleva desde 2024 camino de averiguarlo y no llegará hasta 2030. Cuarenta y nueve sobrevuelos para medir el grosor del hielo y la composición de lo que hay debajo. Ni siquiera va a aterrizar. Y aún así, cuando terminen esos sobrevuelos, seguiremos sin saber lo único que de verdad queremos saber. Porque un océano de cien kilómetros de profundidad, con energía, con sales y con miles de millones de años por delante, es exactamente la lista de ingredientes que en la Tierra bastó una vez. Una sola vez, que sepamos.",
+      "visual_query": "Europa Clipper mission",
+      "visual_generic": [
+        "probe flying through space",
+        "underwater hydrothermal vent",
+        "ice cave blue",
+        "distant sun in space"
+      ],
+      "visual_prompt": "A probe approaching an ice-covered ocean world",
+      "audio_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\audio\\scene_003.mp3",
+      "clip_path": "C:\\Users\\aleja\\Desktop\\ÉTER\\build2\\smoke-test\\scenes\\scene_003.mp4",
+      "duration": 48.901224
+    }
+  ]
+}

@@ -37,8 +37,17 @@ def client() -> Anthropic:
 class Scene:
     index: int
     narration: str
-    visual_query: str = ""       # búsqueda en inglés para los archivos de vídeo
-    visual_prompt: str = ""      # prompt fotorrealista si hay que generar
+    # El sujeto concreto, en inglés, para los archivos científicos (NASA SVS,
+    # imágenes de misión). Puede ser un nombre propio: "Enceladus geysers".
+    visual_query: str = ""
+    # Varias descripciones genéricas y filmables, en inglés, para los bancos de
+    # stock. Son VARIAS porque una escena ocupa unos ocho planos: con una sola
+    # búsqueda salen ocho planos casi idénticos y el corte no se percibe.
+    # NUNCA un nombre propio: los bancos no devuelven cero, devuelven lo que se
+    # parece por letras, y "great red spot" acaba siendo un pájaro carpintero.
+    visual_generic: list = field(default_factory=list)
+    # Prompt fotorrealista por si hay que generar el plano.
+    visual_prompt: str = ""
     audio_path: str | None = None
     clip_path: str | None = None
     duration: float = 0.0
@@ -254,6 +263,20 @@ nunca texto en pantalla, nunca personas hablando a cámara."""
 # --------------------------------------------------------------------------
 
 
+_FALLBACK_GENERIC = ["deep space stars", "cosmic nebula", "planet in space",
+                     "galaxy in deep space"]
+
+
+def _generic_list(value) -> list[str]:
+    """Normaliza `visual_generic` a una lista de búsquedas utilizables."""
+    if isinstance(value, str):
+        value = [value]
+    items = [str(v).strip() for v in (value or []) if str(v).strip()]
+    # Descartar frases que sean instrucciones y no búsquedas.
+    items = [i for i in items if 2 <= len(i.split()) <= 6]
+    return items or list(_FALLBACK_GENERIC)
+
+
 def build_plan(topic: dict, avoid: list[str]) -> VideoPlan:
     narration = write_narration(topic, avoid)
     blocks = _split_into_scenes(narration, config.WORDS_PER_SCENE)
@@ -268,6 +291,7 @@ def build_plan(topic: dict, avoid: list[str]) -> VideoPlan:
                 index=i,
                 narration=block,
                 visual_query=(meta.get("visual_query") or topic["keyword"]).strip(),
+                visual_generic=_generic_list(meta.get("visual_generic")),
                 visual_prompt=(meta.get("visual_prompt") or "").strip(),
             )
         )

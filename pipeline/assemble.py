@@ -36,10 +36,19 @@ def render(scenes, audio: Path, dest: Path) -> Path:
             f"crop={config.WIDTH}:{config.HEIGHT},setsar=1,fps={config.FPS},format=yuv420p[v{i}]"
         )
 
+    # Los desplazamientos se calculan sobre la duración REAL de cada escena, no
+    # sobre la teórica. Cada plano se cuantiza a fotograma entero, así que una
+    # escena de 35,65 s acaba midiendo 35,60: si a xfade le pides un offset que
+    # su entrada no alcanza, recorta la salida, y el error se va acumulando por
+    # la cadena hasta dejar el montaje en un tercio de su duración.
+    lengths = [probe_duration(c) for c in clips]
+
     offset = 0.0
     current = "v0"
     for i in range(1, len(clips)):
-        offset += scenes[i - 1].duration + config.SCENE_GAP
+        # Encadenar aquí deja el acumulado justo en offset + CROSSFADE, que es
+        # exactamente lo que xfade necesita para el solape siguiente.
+        offset += lengths[i - 1] - config.CROSSFADE
         label = f"x{i}"
         steps.append(
             f"[{current}][v{i}]xfade=transition=fade:duration={config.CROSSFADE}"
@@ -49,7 +58,7 @@ def render(scenes, audio: Path, dest: Path) -> Path:
 
     # Un viñeteado muy leve y una entrada/salida a negro: es lo que separa
     # visualmente un montaje automático de uno que parece dirigido.
-    total = offset + scenes[-1].duration + config.SCENE_GAP + config.CROSSFADE
+    total = offset + lengths[-1]
     steps.append(
         f"[{current}]vignette=angle=PI/6,"
         f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[vout]"

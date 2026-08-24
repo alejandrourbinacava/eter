@@ -11,16 +11,24 @@ Así que no se acepta ni se rechaza el clip entero: se muestrea un fotograma
 cada pocos segundos, se marca cada tramo como limpio o sucio, y el banco de
 planos solo sirve trozos de los tramos limpios.
 
-Dos pruebas, las dos baratas y sin dependencias más allá de Pillow:
+Tres pruebas, las tres baratas y sin más dependencia que Pillow:
 
-`_is_space_like`  Una foto astronómica real es casi toda negra. Una gráfica o
-                  una lámina tiene fondo claro y grandes zonas planas.
+`_text_rows`      El texto deja una firma reconocible al binarizar: filas con
+                  varias rachas cortas de píxeles claros alternando con hueco.
+                  Un campo de estrellas da rachas de uno o dos píxeles sueltas;
+                  una línea de rótulo da cinco o más trazos en la misma fila, y
+                  varias filas seguidas así.
 
-`_has_text`       El texto deja una firma muy reconocible al binarizar: filas
-                  con muchas rachas cortas de píxeles claros alternando con
-                  hueco. Un campo de estrellas da rachas de uno o dos píxeles
-                  dispersas; una línea de rótulo da seis o más rachas anchas en
-                  la misma fila, y varias filas seguidas así.
+`_flat_rows`      Rachas largas de valor casi constante y no negro: barras de
+                  espectro, ejes, bordes de panel. Es lo que caza las gráficas
+                  sobre fondo oscuro, que el brillo no distingue del espacio.
+
+`_is_space_like`  Una foto astronómica real es casi toda negra; una lámina tiene
+                  fondo claro. Esta SOLO se aplica a los archivos científicos
+                  (`strict=True`). Con material de banco de stock es
+                  contraproducente: premia lo oscuro, así que de un clip de
+                  textura de hielo solo sobreviven los tramos casi negros y el
+                  montaje entero sale en negro. Pasó, y por eso está separada.
 """
 
 from __future__ import annotations
@@ -102,7 +110,15 @@ def _flat_rows(pixels: list[int], width: int, height: int) -> int:
     return flat
 
 
-def frame_is_clean(path: Path) -> bool:
+def frame_is_clean(path: Path, strict: bool = True) -> bool:
+    """¿Este fotograma es utilizable?
+
+    `strict` decide si además se exige que parezca una imagen astronómica.
+    Solo tiene sentido para los archivos científicos, donde el material bueno
+    está mezclado con láminas y esquemas. Aplicarlo a un clip de banco de stock
+    es contraproducente: como el test premia lo oscuro, de un clip de textura de
+    hielo solo sobreviven los tramos casi negros y el montaje sale en negro.
+    """
     try:
         from PIL import Image
 
@@ -112,7 +128,7 @@ def frame_is_clean(path: Path) -> bool:
     except Exception:
         return True  # ante la duda, no tirar material bueno
 
-    if not _is_space_like(pixels):
+    if strict and not _is_space_like(pixels):
         return False
     # Umbrales medidos sobre material real del SVS: los fotogramas de gráficas
     # dan entre 26 y 58; los de imagen astronómica, entre 0 y 2.
@@ -120,12 +136,15 @@ def frame_is_clean(path: Path) -> bool:
         return False
     if _flat_rows(pixels, 192, 108) >= 45:
         return False
+    # Un plano en negro no aporta nada aunque pase los filtros.
+    if sum(pixels) / len(pixels) < 8:
+        return False
     return True
 
 
 def image_is_clean(path: Path) -> bool:
-    """Igual que `frame_is_clean`, para una imagen fija descargada."""
-    return frame_is_clean(path)
+    """Igual que `frame_is_clean`, para una imagen fija de archivo."""
+    return frame_is_clean(path, strict=True)
 
 
 # --------------------------------------------------------------------------
@@ -133,7 +152,8 @@ def image_is_clean(path: Path) -> bool:
 # --------------------------------------------------------------------------
 
 
-def clean_windows(video: Path, duration: float, min_len: float) -> list[list[float]]:
+def clean_windows(video: Path, duration: float, min_len: float,
+                  strict: bool = True) -> list[list[float]]:
     """Devuelve los intervalos [inicio, fin] del clip que son utilizables.
 
     Si el muestreo falla por lo que sea, se devuelve el clip entero: es
@@ -158,7 +178,7 @@ def clean_windows(video: Path, duration: float, min_len: float) -> list[list[flo
         if not frames:
             return [[0.0, duration]]
 
-        verdicts = [frame_is_clean(f) for f in frames]
+        verdicts = [frame_is_clean(f, strict=strict) for f in frames]
 
     # Cada veredicto cubre su bucket de SAMPLE_EVERY segundos.
     windows: list[list[float]] = []
