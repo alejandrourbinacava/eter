@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pipeline import assemble, config, thumbnail, visuals, voice  # noqa: E402
+from pipeline import assemble, config, music, thumbnail, visuals, voice  # noqa: E402
 from pipeline.script_gen import Scene, VideoPlan  # noqa: E402
 from pipeline.util import log, require_binaries, setup_logging, write_json  # noqa: E402
 
@@ -92,7 +92,7 @@ def main() -> int:
 
     voice.narrate(plan.scenes, workdir)
     voice.write_srt(plan.scenes, workdir / "subtitulos.srt")
-    audio = voice.mix(plan.scenes, workdir, visuals.pick_music(workdir))
+    audio = voice.mix(plan.scenes, workdir, music.track(plan.title))
 
     visuals.build_clips(plan.scenes, workdir)
     video = assemble.render(plan.scenes, audio, workdir / "video.mp4")

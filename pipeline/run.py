@@ -17,7 +17,7 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-from . import assemble, config, script_gen, thumbnail, topics, visuals, voice
+from . import assemble, config, music, script_gen, thumbnail, topics, visuals, voice
 from .util import log, require_binaries, setup_logging, write_json
 
 
@@ -74,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     # ---- locución --------------------------------------------------------
     voice.narrate(plan.scenes, workdir)
     srt = voice.write_srt(plan.scenes, workdir / "subtitulos.srt")
-    audio = voice.mix(plan.scenes, workdir, visuals.pick_music(workdir))
+    audio = voice.mix(plan.scenes, workdir, music.track(plan.title))
     write_json(plan_file, plan.to_dict())
 
     if args.no_render:

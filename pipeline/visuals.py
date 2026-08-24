@@ -1,27 +1,30 @@
-"""Obtención y preparación del plano de cada escena.
+"""Búsqueda y descarga del material de archivo.
 
-Cascada de fuentes, de mejor a peor. La primera que devuelva algo utilizable
-gana; si todas fallan, hay un plano procedural para que el render nunca se
-caiga por falta de imagen.
+Este módulo consigue las FUENTES; el troceado en planos de seis segundos y el
+ritmo de montaje viven en `shots.py`.
 
-  1. Biblioteca    — tus propios clips en `library/`, incluidos los que generes
-                     a mano en Google Labs/Flow, Runway o donde sea. Ver
-                     `library/README.md`. Tienen prioridad sobre todo lo demás.
-  2. Pexels        — vídeo de stock cinematográfico. Clave gratuita.
-  3. Pixabay       — ídem. Clave gratuita.
-  4. NASA imagen   — el archivo fotográfico grande (Hubble, JWST, Cassini, JPL).
-                     Sin clave. Se convierte en plano con movimiento lento.
-  5. NASA vídeo    — metraje de misión y visualizaciones científicas. Sin clave.
-  6. IA por API    — adaptador listo, apagado por defecto: ver ai33.generate_image.
-  7. Procedural    — campo de estrellas con deriva, generado por ffmpeg.
+La base del vídeo son clips. La cascada, de mejor a peor:
 
-Por qué la imagen va antes que el vídeo. Medido sobre este mismo archivo: la
-biblioteca de vídeo de la NASA está dominada por piezas de comunicación —
-cabeceras animadas, rótulos «LIVE INTERACTIVE», salas de control, ruedas de
-prensa— que en pantalla delatan al instante que el montaje es automático. El
-archivo fotográfico, en cambio, es material de instrumento en alta resolución y
-con un movimiento lento encima da exactamente el plano de documental que usa el
-canal. El vídeo de la NASA queda como red de seguridad y con un filtro estricto.
+  1. Biblioteca  — tus propios clips en `library/`, incluidos los que generes a
+                   mano en Google Labs/Flow, Runway o donde sea. Prioridad
+                   absoluta. Ver `library/README.md`.
+  2. Pexels      — vídeo de stock cinematográfico. Clave gratuita.
+  3. Pixabay     — ídem. Clave gratuita.
+  4. NASA SVS    — Scientific Visualization Studio. Sin clave. Es el mejor
+                   archivo gratuito para este canal: animación científica pura,
+                   sin rótulos ni ruedas de prensa, y con piezas de 30 a 90
+                   segundos de las que salen diez o quince planos distintos.
+  5. NASA vídeo  — la biblioteca general, filtrada. Red de seguridad.
+  6. NASA imagen — SOLO relleno de emergencia, cuando ninguna fuente de vídeo
+                   tiene nada. Se trocea igual, en planos de seis segundos con
+                   movimiento de cámara.
+
+Dos filtros hacen el trabajo de calidad. Uno descarta por metadatos las piezas
+de comunicación del archivo de la NASA: sin él se cuelan cabeceras animadas,
+rótulos «LIVE INTERACTIVE» y salas de control. El otro, `_looks_like_space()`,
+mira el histograma y tira las láminas científicas con texto quemado, que la
+búsqueda por metadatos no detecta: una foto astronómica real es casi toda
+negra, una figura con rótulos tiene fondo claro.
 
 Ningún material entra en el vídeo sin ser de dominio público (NASA/ESA), de
 licencia libre para uso comercial (Pexels, Pixabay) o tuyo (biblioteca).
@@ -30,11 +33,13 @@ licencia libre para uso comercial (Pexels, Pixabay) o tuyo (biblioteca).
 from __future__ import annotations
 
 import hashlib
+import json
 import random
+import re
 from pathlib import Path
 
-from . import config
-from .util import download, ffmpeg, http, log, probe_streams
+from . import config, inspect_media, shots
+from .util import download, ffmpeg, http, log, probe_duration, probe_streams
 
 # Los MP4 originales de la NASA llegan a 1,7 GB. Se corta la descarga.
 MAX_CLIP_BYTES = 90 * 1024 * 1024
@@ -159,6 +164,81 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
     return None
 
 
+_SVS_API = "https://svs.gsfc.nasa.gov/api"
+# Solo CGI científico. Ver la explicación en _svs().
+_SVS_TYPES = {"Visualization", "Animation", "B-Roll"}
+_SVS_RES = re.compile(r"(?:^|[^0-9])(\d{3,4})(?:p\d*|x\d+p\d+)?\.mp4$", re.I)
+
+
+def _svs_height(url: str) -> int:
+    """Las resoluciones del SVS vienen en el nombre y sin un patrón único:
+    `_1080p30.mp4`, `-1080.mp4`, `2048p30.mp4`, `3840x2160p60.mp4`, `_4K.mp4`."""
+    if re.search(r"[_-]4k\.mp4$", url, re.I):
+        return 2160
+    m = re.search(r"(\d{3,4})x(\d{3,4})p\d+\.mp4$", url, re.I)
+    if m:
+        return int(m.group(2))
+    m = _SVS_RES.search(url)
+    return int(m.group(1)) if m else 0
+
+
+def _svs(query: str, pool: AssetPool) -> str | None:
+    """Scientific Visualization Studio de la NASA.
+
+    Es el mejor archivo gratuito para este canal: son animaciones científicas
+    puras, sin ruedas de prensa ni rótulos, y muchas duran entre 30 y 90
+    segundos, así que de un solo activo salen diez o quince planos de 6 s.
+
+    Dos trampas de la API, las dos comprobadas a mano:
+
+    Primera, ignora `q` en silencio y devuelve el archivo entero; el parámetro
+    que filtra es `search`.
+
+    Segunda, y más importante, `result_type` separa el material limpio del
+    divulgativo. `Visualization` y `Animation` son CGI científico puro.
+    `Produced Video` son piezas con presentador, gráficas y rótulos: de ahí
+    salió el plano con la palabra SPECTRA a pantalla completa que obligó a
+    montar este filtro. `Infographic`, `Interactive` y `Gallery` sobran por
+    definición. Solo uno de cada ocho resultados sirve, así que se pide una
+    página grande.
+    """
+    try:
+        r = http("GET", f"{_SVS_API}/search/", params={"search": query, "limit": 60})
+    except RuntimeError:
+        return None
+
+    wanted = _tokens(query)
+    for result in r.json().get("results", []):
+        if result.get("result_type") not in _SVS_TYPES:
+            continue
+        page_id = result.get("id")
+        if page_id is None or not pool.take(f"svs:{page_id}"):
+            continue
+        title = (result.get("title") or "").lower()
+        if any(noise in title for noise in _NASA_NOISE):
+            continue
+        # El buscador del SVS puntúa flojo y cuela resultados sin relación:
+        # para «europa jupiter moon» devolvía primero un diagrama orbital de la
+        # flota de satélites. Se exige que comparta alguna palabra de verdad.
+        haystack = _tokens(f"{result.get('title', '')} {result.get('description', '')[:400]}")
+        if wanted and not (wanted & haystack):
+            continue
+        try:
+            detail = http("GET", f"{_SVS_API}/{page_id}/").json()
+        except RuntimeError:
+            continue
+        urls = set(re.findall(r"https?://[^\"\\ ]+?\.mp4", json.dumps(detail)))
+        # 1080p es el punto dulce: calidad de sobra y una décima parte del 4K.
+        ranked = sorted(
+            ((_svs_height(u), u) for u in urls),
+            key=lambda hu: (abs(hu[0] - 1080), -hu[0]),
+        )
+        for height, url in ranked:
+            if height >= 720:
+                return url
+    return None
+
+
 _NASA_SEARCH = "https://images-api.nasa.gov/search"
 
 # El archivo de la NASA está lleno de material de comunicación institucional que
@@ -190,36 +270,7 @@ _FIGURE_WORDS = ("diagram", "chart", "graph", "plot", "figure", "poster", "infog
 
 
 def _looks_like_space(path: Path) -> bool:
-    """Rechaza láminas, esquemas y documentos por su histograma.
-
-    Truco barato y sorprendentemente fiable en este dominio: una fotografía
-    astronómica real es casi toda negra, mientras que una figura científica
-    tiene fondo blanco o gris y grandes zonas planas muy claras. Con esto se
-    caen las láminas con rótulos que la búsqueda por metadatos no detecta.
-    """
-    try:
-        from PIL import Image
-
-        with Image.open(path) as img:
-            img = img.convert("L").resize((160, 90))
-            pixels = list(img.getdata())
-    except Exception:
-        return True  # ante la duda, no descartar material bueno
-
-    total = len(pixels)
-    if not total:
-        return False
-    mean = sum(pixels) / total
-    near_white = sum(1 for p in pixels if p > 235) / total
-    dark = sum(1 for p in pixels if p < 60) / total
-
-    if mean > 125:
-        return False          # imagen globalmente clara: fondo de documento
-    if near_white > 0.16:
-        return False          # grandes planos blancos: paneles y cajas de texto
-    if dark < 0.25:
-        return False          # sin negro de fondo no es un plano de espacio
-    return True
+    return inspect_media.image_is_clean(path)
 
 
 def _nasa_assets(query: str, media: str) -> list[dict]:
@@ -282,7 +333,7 @@ def _nasa_image(query: str, pool: AssetPool) -> str | None:
 
 
 # --------------------------------------------------------------------------
-# Conversión a plano
+# Inspección del material
 # --------------------------------------------------------------------------
 
 
@@ -323,154 +374,33 @@ def _autocrop(src: Path) -> str:
     return f"crop={w}:{h}:{x}:{y},"
 
 
-def _clip_from_video(src: Path, dest: Path, duration: float, seed: int) -> None:
-    """Recorta, encuadra a 16:9 y da un empuje lento de zoom para que no se
-    note el bucle si el material es corto."""
-    zoom = 1.0 + 0.04 * (seed % 3)
-    ffmpeg([
-        "-stream_loop", "-1", "-i", str(src),
-        "-an", "-t", f"{duration:.3f}",
-        "-vf",
-        (
-            _autocrop(src)
-            + f"scale={config.WIDTH * 2}:{config.HEIGHT * 2}:force_original_aspect_ratio=increase,"
-            f"crop={config.WIDTH * 2}:{config.HEIGHT * 2},"
-            f"scale={int(config.WIDTH * zoom)}:{int(config.HEIGHT * zoom)},"
-            f"crop={config.WIDTH}:{config.HEIGHT},"
-            f"fps={config.FPS},format=yuv420p"
-        ),
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-        str(dest),
-    ])
+# --------------------------------------------------------------------------
+# Orquestación
+# --------------------------------------------------------------------------
 
 
-def _clip_from_image(src: Path, dest: Path, duration: float, seed: int) -> None:
-    """Movimiento cinematográfico lento sobre una imagen fija.
+def _fetch_source(query: str, pool: AssetPool, raw_dir: Path, stats: dict):
+    """Baja UN material nuevo para esta búsqueda. Devuelve (ruta, es_imagen).
 
-    Cuatro trayectorias que se alternan por escena para que veinte planos
-    seguidos no se muevan todos igual.
+    Prioridad absoluta al vídeo: la base del montaje son clips. La imagen fija
+    solo aparece cuando ninguna de las cinco fuentes de vídeo tiene nada, y aun
+    entonces se trocea en planos de seis segundos como cualquier otro material.
     """
-    frames = max(int(duration * config.FPS), 1)
-    rate = 0.00055
-    mode = seed % 4
-    if mode == 0:      # zoom de entrada al centro
-        z = f"min(zoom+{rate},1.30)"
-        x, y = "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"
-    elif mode == 1:    # zoom de salida
-        z = f"if(lte(zoom,1.0),1.30,max(zoom-{rate},1.0))"
-        x, y = "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"
-    elif mode == 2:    # deriva lateral con zoom leve
-        z = f"min(zoom+{rate * 0.6},1.18)"
-        x, y = f"(iw-iw/zoom)*(on/{frames})", "ih/2-(ih/zoom/2)"
-    else:              # deriva vertical descendente
-        z = f"min(zoom+{rate * 0.6},1.18)"
-        x, y = "iw/2-(iw/zoom/2)", f"(ih-ih/zoom)*(on/{frames})"
+    variants = list(dict.fromkeys([query, " ".join(query.split()[:2]), query.split()[0]]))
+    counter = len(list(raw_dir.glob("*")))
 
-    ffmpeg([
-        "-loop", "1", "-i", str(src),
-        "-t", f"{duration:.3f}",
-        "-vf",
-        (
-            # El sobremuestreo previo es lo que evita el temblor típico de zoompan.
-            f"scale={config.WIDTH * 3}:-2:flags=lanczos,"
-            f"crop={config.WIDTH * 3}:{config.HEIGHT * 3}:(in_w-out_w)/2:(in_h-out_h)/2,"
-            f"zoompan=z='{z}':d={frames}:x='{x}':y='{y}'"
-            f":s={config.WIDTH}x{config.HEIGHT}:fps={config.FPS},"
-            f"format=yuv420p"
-        ),
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-        str(dest),
-    ])
-
-
-def _procedural(dest: Path, duration: float, seed: int) -> None:
-    """Último recurso: campo de estrellas en deriva. Nunca falla."""
-    ffmpeg([
-        "-f", "lavfi",
-        "-i", f"nullsrc=s={config.WIDTH}x{config.HEIGHT}:r={config.FPS}:d={duration:.3f}",
-        "-vf",
-        (
-            f"geq=random(1)*255:128:128,"
-            f"lutyuv=y='if(gt(val,252),val,0)',"
-            f"boxblur=1:1,"
-            f"zoompan=z='min(zoom+0.0009,1.4)':d={int(duration * config.FPS)}"
-            f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
-            f":s={config.WIDTH}x{config.HEIGHT}:fps={config.FPS},"
-            f"colorbalance=bs=0.12,format=yuv420p"
-        ),
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-        str(dest),
-    ])
-    log.warning("Escena resuelta con plano procedural (semilla %d)", seed)
-
-
-# --------------------------------------------------------------------------
-# Orquestación por escena
-# --------------------------------------------------------------------------
-
-
-def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
-    pool = pool or AssetPool()
-    clips_dir = workdir / "clips"
-    raw_dir = workdir / "raw"
-    clips_dir.mkdir(parents=True, exist_ok=True)
-    raw_dir.mkdir(parents=True, exist_ok=True)
-
-    stats = {"biblioteca": 0, "pexels": 0, "pixabay": 0, "nasa-video": 0,
-             "nasa-image": 0, "ai": 0, "procedural": 0}
-    if library_index():
-        log.info("Biblioteca local: %d clips propios disponibles", len(library_index()))
-
-    for scene in scenes:
-        dest = clips_dir / f"scene_{scene.index:03d}.mp4"
-        if dest.exists():
-            scene.clip_path = str(dest)
-            continue
-
-        # Longitud exigida por el encadenado de assemble.render(): la escena,
-        # su pausa posterior y el solape del fundido.
-        needed = scene.duration + config.SCENE_GAP + config.CROSSFADE
-        seed = int(hashlib.md5(f"{scene.index}{scene.visual_query}".encode()).hexdigest()[:8], 16)
-        source = _resolve(scene, pool, raw_dir, stats)
-
-        try:
-            if source is None:
-                _procedural(dest, needed, seed)
-                stats["procedural"] += 1
-            elif source.suffix.lower() in (".mp4", ".mov", ".webm", ".m4v"):
-                _clip_from_video(source, dest, needed, seed)
-            else:
-                _clip_from_image(source, dest, needed, seed)
-        except RuntimeError:
-            log.warning("Escena %02d: el material falló al procesar, se usa procedural", scene.index)
-            _procedural(dest, needed, seed)
-            stats["procedural"] += 1
-
-        scene.clip_path = str(dest)
-
-    log.info("Planos por fuente: %s", ", ".join(f"{k}={v}" for k, v in stats.items() if v))
-    return scenes
-
-
-def _resolve(scene, pool: AssetPool, raw_dir: Path, stats: dict) -> Path | None:
-    """Busca material para una escena bajando por la cascada de fuentes."""
-    query = scene.visual_query or "deep space"
-    variants = [query, " ".join(query.split()[:2]), query.split()[0]]
-
-    # Tus propios clips van primero: son los que llevan tu criterio.
+    # Tus propios clips, primero.
     own = _library(query, pool)
     if own is not None:
         stats["biblioteca"] += 1
-        log.debug("  escena %02d ← biblioteca %s", scene.index, own.name)
-        return own
+        return own, False
 
-    # Bancos de vídeo: es el único material con movimiento real y limpio.
-    for variant in dict.fromkeys(v for v in variants if v):
-        for name, finder in (("pexels", _pexels), ("pixabay", _pixabay)):
+    for variant in variants:
+        for name, finder in (("pexels", _pexels), ("pixabay", _pixabay), ("svs", _svs)):
             url = finder(variant, pool)
             if not url:
                 continue
-            dest = raw_dir / f"{name}_{scene.index:03d}.mp4"
+            dest = raw_dir / f"{name}_{counter:03d}.mp4"
             try:
                 download(url, dest, max_bytes=MAX_CLIP_BYTES)
             except Exception as exc:
@@ -479,57 +409,130 @@ def _resolve(scene, pool: AssetPool, raw_dir: Path, stats: dict) -> Path | None:
             # Una descarga truncada puede dejar un fichero sin pista de vídeo.
             if dest.stat().st_size > 200_000 and _has_video_stream(dest):
                 stats[name] += 1
-                log.debug("  escena %02d <- %s '%s'", scene.index, name, variant)
-                return dest
+                log.debug("  fuente <- %s '%s'", name, variant)
+                return dest, False
 
-    # El archivo fotográfico sale mejor en pantalla que el vídeo institucional.
-    for variant in dict.fromkeys(v for v in variants if v):
-        # Varios intentos por búsqueda: el filtro de láminas descarta bastantes
-        # y no queremos rendirnos al primer descarte.
-        for _ in range(5):
-            url = _nasa_image(variant, pool)
-            if not url:
-                break
-            dest = raw_dir / f"nasa_{scene.index:03d}{Path(url).suffix or '.jpg'}"
-            try:
-                download(url, dest, max_bytes=MAX_CLIP_BYTES)
-            except Exception:
-                continue
-            if dest.stat().st_size <= 30_000:
-                continue
-            if not _looks_like_space(dest):
-                log.debug("  descartada lámina o esquema: %s", url.rsplit("/", 1)[-1][:60])
-                continue
-            stats["nasa-image"] += 1
-            log.debug("  escena %02d <- nasa-image '%s'", scene.index, variant)
-            return dest
-
-    # Red de seguridad: vídeo de la NASA ya filtrado de piezas de comunicación.
-    for variant in dict.fromkeys(v for v in variants if v):
+    for variant in variants:
         url = _nasa_video(variant, pool)
         if not url:
             continue
-        dest = raw_dir / f"nasa-video_{scene.index:03d}.mp4"
+        dest = raw_dir / f"nasa-video_{counter:03d}.mp4"
         try:
             download(url, dest, max_bytes=MAX_CLIP_BYTES)
         except Exception:
             continue
         if dest.stat().st_size > 200_000 and _has_video_stream(dest):
             stats["nasa-video"] += 1
-            log.debug("  escena %02d <- nasa-video '%s'", scene.index, variant)
-            return dest
+            log.debug("  fuente <- nasa-video '%s'", variant)
+            return dest, False
 
-
-    if USE_AI_IMAGES and scene.visual_prompt:
-        from . import ai33
-
-        dest = raw_dir / f"ai_{scene.index:03d}.jpg"
-        got = ai33.generate_image(scene.visual_prompt, dest)
-        if got:
-            stats["ai"] += 1
-            return got
+    # Último recurso, y solo si no hay ni un clip disponible.
+    for variant in variants:
+        for _ in range(4):
+            url = _nasa_image(variant, pool)
+            if not url:
+                break
+            dest = raw_dir / f"nasa-img_{counter:03d}{Path(url).suffix or '.jpg'}"
+            try:
+                download(url, dest, max_bytes=MAX_CLIP_BYTES)
+            except Exception:
+                continue
+            if dest.stat().st_size > 30_000 and _looks_like_space(dest):
+                stats["nasa-imagen"] += 1
+                log.debug("  fuente <- nasa-imagen '%s' (relleno)", variant)
+                return dest, True
 
     return None
+
+
+def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
+    """Monta cada escena como una secuencia de planos cortos.
+
+    Devuelve las escenas con `clip_path` apuntando al vídeo de la escena, que es
+    lo que espera assemble.render().
+    """
+    pool = pool or AssetPool()
+    raw_dir = workdir / "raw"
+    shots_dir = workdir / "shots"
+    scenes_dir = workdir / "scenes"
+    for d in (raw_dir, shots_dir, scenes_dir):
+        d.mkdir(parents=True, exist_ok=True)
+
+    stats = {"biblioteca": 0, "pexels": 0, "pixabay": 0, "svs": 0,
+             "nasa-video": 0, "nasa-imagen": 0}
+
+    if library_index():
+        log.info("Biblioteca local: %d clips propios disponibles", len(library_index()))
+
+    bank = shots.ClipBank(lambda q: _fetch_source(q, pool, raw_dir, stats))
+    plan = shots.plan(scenes)
+    bank.set_total_shots(len(plan))
+    by_query = {s.index: (s.visual_query or "deep space") for s in scenes}
+
+    log.info("Montaje: %d planos de %.0f-%.0f s para %d escenas",
+             len(plan), config.SHOT_MIN, config.SHOT_MAX, len(scenes))
+
+    autocrops: dict[str, str] = {}
+    fillers = 0
+
+    for shot in plan:
+        dest = shots_dir / f"{shot.scene_index:03d}_{shot.index:02d}.mp4"
+        if dest.exists():
+            shot.path = dest
+            continue
+
+        got = bank.segment(by_query[shot.scene_index], shot.duration)
+        if got:
+            shot.source, shot.source_start, shot.is_image = got
+        else:
+            fillers += 1
+
+        crop = ""
+        if shot.source is not None and not shot.is_image:
+            key = str(shot.source)
+            if key not in autocrops:
+                autocrops[key] = _autocrop(shot.source)
+            crop = autocrops[key]
+
+        try:
+            shots.render_shot(shot, dest, crop)
+        except RuntimeError:
+            log.debug("  plano %s falló al procesar, se rellena", dest.stem)
+            shot.source = None
+            shots.render_shot(shot, dest)
+            fillers += 1
+
+    # Un plano por escena, con corte seco entre ellos.
+    for scene in scenes:
+        paths = [s.path for s in plan if s.scene_index == scene.index and s.path]
+        dest = scenes_dir / f"scene_{scene.index:03d}.mp4"
+        if not dest.exists():
+            shots.concat_scene(paths, dest, scenes_dir / f"scene_{scene.index:03d}.txt")
+        scene.clip_path = str(dest)
+
+    videos, images = bank.stats
+    used, worst = bank.diversity_report()
+    log.info("Fuentes: %s", ", ".join(f"{k}={v}" for k, v in stats.items() if v) or "ninguna")
+    log.info("Banco: %d clips y %d imágenes de relleno; %d planos procedurales",
+             videos, images, fillers)
+    log.info("Variedad: %d materiales distintos; el más repetido cubre %d de %d planos",
+             used, worst, len(plan))
+
+    if images and not videos:
+        log.warning(
+            "No se ha encontrado ni un clip de vídeo. Añade PEXELS_API_KEY y "
+            "PIXABAY_API_KEY, o clips propios en library/."
+        )
+    # Regla empírica: por debajo de un material por cada seis planos el montaje
+    # se nota repetido y se va de tema, porque acaba tirando de lo que haya.
+    elif videos and len(plan) > videos * 6:
+        log.warning(
+            "Poca variedad: %d clips para %d planos. Los archivos gratuitos de la "
+            "NASA no dan abasto con cortes de 6 s. Añade PEXELS_API_KEY y "
+            "PIXABAY_API_KEY (gratis) o clips propios en library/.",
+            videos, len(plan),
+        )
+    return scenes
 
 
 def hero_image(query: str, dest: Path) -> Path | None:
@@ -556,17 +559,3 @@ def hero_image(query: str, dest: Path) -> Path | None:
             log.info("Imagen de miniatura: archivo NASA '%s'", variant)
             return dest
     return None
-
-
-def pick_music(workdir: Path) -> Path | None:
-    """Elige un lecho musical de brand/music si el usuario ha dejado alguno.
-
-    No se descarga música de terceros: el riesgo de Content ID no compensa.
-    """
-    music_dir = config.BRAND_DIR / "music"
-    if not music_dir.exists():
-        return None
-    tracks = sorted(p for p in music_dir.iterdir() if p.suffix.lower() in (".mp3", ".m4a", ".wav"))
-    if not tracks:
-        return None
-    return random.Random(workdir.name).choice(tracks)

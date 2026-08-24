@@ -80,10 +80,38 @@ WORDS_PER_SCENE = 90
 
 WIDTH, HEIGHT = 1920, 1080
 FPS = 30
-CROSSFADE = 0.6  # segundos de fundido entre planos
-MUSIC_DB = -27.0  # nivel del lecho musical bajo la voz
+CROSSFADE = 0.6  # fundido entre escenas (dentro de una escena el corte es seco)
 VIDEO_CRF = 20
 VIDEO_PRESET = "medium"
+
+# --------------------------------------------------------------------------
+# Ritmo de montaje
+# --------------------------------------------------------------------------
+# La base del vídeo son clips, nunca imágenes fijas, y ningún plano pasa de
+# SHOT_MAX. Un vídeo de 14 minutos sale a unos 180 planos.
+
+SHOT_MIN = 3.0
+SHOT_MAX = 6.0
+
+# Patrón de duraciones que se recorre en bucle. Alternar largo y corto es lo
+# que da sensación de ritmo; una duración constante se percibe como plantilla.
+SHOT_RHYTHM = (5.5, 3.6, 4.8, 6.0, 3.2, 5.0, 4.2, 5.8, 3.8, 4.5)
+
+# --------------------------------------------------------------------------
+# Música
+# --------------------------------------------------------------------------
+
+MUSIC_DB = float(os.getenv("ETER_MUSIC_DB", "-25"))  # bajo la voz
+
+# Se genera con Suno a través de ai33 si no hay nada en brand/music.
+MUSIC_PROMPT = (
+    "Dark cinematic space documentary underscore. Slow sustained synth pads in a "
+    "minor key, deep sub bass drone, sparse piano notes with long reverb, a subtle "
+    "pulsing heartbeat rhythm. Mysterious, vast, unsettling but restrained. No drum "
+    "hits, no foreground melody, nothing that competes with a narrator. Ambient, "
+    "atmospheric, continuous."
+)
+MUSIC_CACHE = CACHE_DIR / "music"
 
 # --------------------------------------------------------------------------
 # Publicación

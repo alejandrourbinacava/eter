@@ -76,23 +76,35 @@ def mix(scenes, workdir: Path, music: Path | None = None) -> Path:
 
     final = audio_dir / "master.m4a"
     if music and music.exists():
-        # Música en bucle bajo la voz, con ducking suave y fundido de salida.
         duration = probe_duration(voice_track)
+        # Para que MUSIC_DB signifique algo, las dos pistas se llevan primero al
+        # mismo punto de referencia (-16 LUFS) y solo entonces se baja la música.
+        # Así -25 dB son veinticinco decibelios por debajo de la voz, y no un
+        # número que depende de cómo viniera masterizada la pista.
+        #
+        # Encima va un compresor con cadena lateral: cuando entra la voz, la
+        # música cede sola unos decibelios más y vuelve al soltar. Un nivel fijo
+        # suena bien en los silencios y estorba durante la narración.
         ffmpeg([
             "-i", str(voice_track),
             "-stream_loop", "-1", "-i", str(music),
             "-filter_complex",
-            f"[1:a]volume={config.MUSIC_DB}dB,afade=t=out:st={duration - 4:.2f}:d=4[bed];"
-            f"[0:a][bed]sidechaincompress=threshold=0.05:ratio=6:attack=15:release=350[mix];"
-            f"[mix]loudnorm=I=-14:TP=-1.5:LRA=11[out]",
+            f"[0:a]loudnorm=I=-16:TP=-2:LRA=11,asplit=2[voz][llave];"
+            f"[1:a]loudnorm=I=-16:TP=-2:LRA=11,volume={config.MUSIC_DB}dB,"
+            f"afade=t=in:st=0:d=3,afade=t=out:st={max(duration - 5, 0):.2f}:d=5[lecho];"
+            f"[lecho][llave]sidechaincompress="
+            f"threshold=0.03:ratio=4:attack=20:release=400:makeup=1[duck];"
+            f"[voz][duck]amix=inputs=2:duration=first:normalize=0[mezcla];"
+            f"[mezcla]loudnorm=I=-14:TP=-1.5:LRA=11[out]",
             "-map", "[out]", "-t", f"{duration:.3f}",
-            "-c:a", "aac", "-b:a", "192k", str(final),
+            "-c:a", "aac", "-b:a", "192k", "-ar", "44100", str(final),
         ])
+        log.info("Mezcla con música a %.0f dB bajo la voz", config.MUSIC_DB)
     else:
         ffmpeg([
             "-i", str(voice_track),
             "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-            "-c:a", "aac", "-b:a", "192k", str(final),
+            "-c:a", "aac", "-b:a", "192k", "-ar", "44100", str(final),
         ])
 
     log.info("Audio maestro: %.1f min", probe_duration(final) / 60)
