@@ -1,0 +1,286 @@
+"""Generación del guion en la voz de Éter.
+
+Se hace en dos llamadas deliberadamente separadas:
+
+  1. `write_narration`  — prosa corrida, sin estructura, sin JSON. Pedirle al
+     modelo que rellene 25 objetos JSON degrada la escritura; escribiendo del
+     tirón mantiene el ritmo y los encadenados largos que definen al canal.
+  2. `plan_production`  — sobre esa prosa ya escrita, se trocea en escenas y se
+     decide el material visual, el título, la miniatura y la descripción.
+
+Un tercer paso local (`_split_into_scenes`) garantiza que ninguna escena se
+corte a mitad de frase, pase lo que pase con el modelo.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field
+
+from anthropic import Anthropic
+
+from . import config
+from .util import log
+
+_client: Anthropic | None = None
+
+
+def client() -> Anthropic:
+    global _client
+    if _client is None:
+        _client = Anthropic(api_key=config.require("ANTHROPIC_API_KEY", config.ANTHROPIC_API_KEY))
+    return _client
+
+
+@dataclass
+class Scene:
+    index: int
+    narration: str
+    visual_query: str = ""       # búsqueda en inglés para los archivos de vídeo
+    visual_prompt: str = ""      # prompt fotorrealista si hay que generar
+    audio_path: str | None = None
+    clip_path: str | None = None
+    duration: float = 0.0
+
+
+@dataclass
+class VideoPlan:
+    topic: dict
+    title: str
+    thumb_word: str
+    description: str
+    tags: list[str]
+    narration: str
+    scenes: list[Scene] = field(default_factory=list)
+
+    @property
+    def word_count(self) -> int:
+        return len(self.narration.split())
+
+    def to_dict(self) -> dict:
+        return {
+            "topic": self.topic,
+            "title": self.title,
+            "thumb_word": self.thumb_word,
+            "description": self.description,
+            "tags": self.tags,
+            "narration": self.narration,
+            "scenes": [s.__dict__ for s in self.scenes],
+        }
+
+
+# --------------------------------------------------------------------------
+# Paso 1 — la prosa
+# --------------------------------------------------------------------------
+
+SYSTEM = """Eres el guionista de Éter, un canal de documentales espaciales en \
+castellano. Escribes el texto que un narrador leerá en voz alta, nada más: sin \
+encabezados, sin marcas de escena, sin acotaciones, sin viñetas, sin indicar \
+tiempos. Solo la narración corrida, en párrafos.
+
+Tu único criterio de calidad es que el resultado sea indistinguible de los \
+guiones ya publicados del canal. Te doy la guía de voz y un guion real completo \
+como referencia. Respétalos al detalle: la estructura en cinco tiempos, el \
+ritmo de frase, el uso de cifras, las transiciones explícitas entre bloques y \
+todas las prohibiciones.
+
+Rigor factual innegociable: cada dato debe ser verificable y estar en el \
+consenso científico actual. Si dudas de una cifra, cámbiala por una formulación \
+cualitativa en vez de inventarla. La incertidumbre científica genuina es \
+material narrativo de primera; la falsedad no."""
+
+
+def write_narration(topic: dict, avoid: list[str]) -> str:
+    guide = config.VOICE_GUIDE.read_text(encoding="utf-8")
+    reference = config.REFERENCE_SCRIPT.read_text(encoding="utf-8")
+
+    avoid_block = ""
+    if avoid:
+        avoid_block = (
+            "\n\nEl canal ya ha publicado estos vídeos. No repitas su tesis ni "
+            "reutilices sus aperturas:\n- " + "\n- ".join(avoid[-25:])
+        )
+
+    prompt = f"""<guia_de_voz>
+{guide}
+</guia_de_voz>
+
+<guion_de_referencia>
+{reference}
+</guion_de_referencia>
+
+<encargo>
+Tema: {topic['title_hint']}
+Ángulo — la anomalía que sostiene el vídeo: {topic['angle']}
+Extensión objetivo: {config.TARGET_WORDS} palabras (margen de ±8 %).
+</encargo>{avoid_block}
+
+Escribe la narración completa. Empieza directamente por la primera frase del \
+Tiempo 1 y termina en la última frase del Tiempo 5. No escribas nada más."""
+
+    log.info("Escribiendo guion: %s", topic["title_hint"])
+    resp = client().messages.create(
+        model=config.SCRIPT_MODEL,
+        max_tokens=16000,
+        system=SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = resp.content[0].text.strip()
+    text = _strip_stage_directions(text)
+    log.info("Guion escrito: %d palabras (~%.1f min)", len(text.split()),
+             len(text.split()) / config.WORDS_PER_MINUTE)
+    return text
+
+
+def _strip_stage_directions(text: str) -> str:
+    """Quita cualquier resto de marcado que el modelo se deje colar."""
+    text = re.sub(r"^\s*(#+|\*\*)\s*(TIEMPO|Tiempo|ESCENA|Escena|Bloque)[^\n]*\n", "", text, flags=re.M)
+    text = re.sub(r"^\s*[-*]\s+", "", text, flags=re.M)
+    text = re.sub(r"\[[^\]]{0,60}\]", "", text)       # [música], [pausa]
+    text = re.sub(r"\((?:pausa|música|silencio)[^)]*\)", "", text, flags=re.I)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+# --------------------------------------------------------------------------
+# Paso 2 — troceado en escenas (local, determinista)
+# --------------------------------------------------------------------------
+
+_SENTENCE = re.compile(r"[^.!?…]+[.!?…]+(?:\s|$)|[^.!?…]+$")
+
+
+def _split_into_scenes(narration: str, words_per_scene: int) -> list[str]:
+    """Agrupa frases completas en bloques de ~words_per_scene palabras.
+
+    El corte va siempre en final de frase: un plano nunca cambia a mitad de una
+    idea, y el TTS por escena no parte una entonación por la mitad.
+    """
+    sentences = [s.strip() for s in _SENTENCE.findall(narration) if s.strip()]
+    blocks: list[str] = []
+    current: list[str] = []
+    count = 0
+    for sentence in sentences:
+        current.append(sentence)
+        count += len(sentence.split())
+        if count >= words_per_scene:
+            blocks.append(" ".join(current))
+            current, count = [], 0
+    if current:
+        # Una cola muy corta se pega al bloque anterior en vez de ser un plano.
+        if blocks and count < words_per_scene * 0.4:
+            blocks[-1] += " " + " ".join(current)
+        else:
+            blocks.append(" ".join(current))
+    return blocks
+
+
+# --------------------------------------------------------------------------
+# Paso 3 — plan de producción
+# --------------------------------------------------------------------------
+
+PLAN_SYSTEM = """Eres el director de fotografía y el editor de metadatos de \
+Éter. Recibes un guion ya escrito y devuelves exclusivamente un objeto JSON \
+válido, sin texto alrededor y sin vallas de código."""
+
+
+def plan_production(topic: dict, narration: str, blocks: list[str]) -> dict:
+    guide = config.VOICE_GUIDE.read_text(encoding="utf-8")
+    numbered = "\n\n".join(f"[{i}] {b}" for i, b in enumerate(blocks))
+
+    prompt = f"""<guia_de_voz>
+{guide}
+</guia_de_voz>
+
+El guion está dividido en {len(blocks)} bloques numerados. Cada bloque necesita \
+un plano.
+
+<bloques>
+{numbered}
+</bloques>
+
+Devuelve este JSON exacto:
+
+{{
+  "title": "título de 45-65 caracteres en Title Case, según la sección 6",
+  "thumb_word": "UNA SOLA PALABRA EN MAYÚSCULAS, 5-10 letras",
+  "description": "descripción de YouTube según la sección 7, con sus tres párrafos y emojis, sin los hashtags",
+  "tags": ["25-30 etiquetas en español, de lo específico a lo genérico"],
+  "scenes": [
+    {{
+      "index": 0,
+      "visual_query": "2-4 palabras EN INGLÉS para buscar en archivos de vídeo de la NASA y bancos de imágenes. Concreto y filmable: 'saturn rings closeup', 'solar flare eruption'. Nunca abstracto: nada de 'human curiosity' ni 'the passage of time'.",
+      "visual_prompt": "una frase EN INGLÉS describiendo un plano fotorrealista de documental para ese bloque, por si hay que generarlo"
+    }}
+  ]
+}}
+
+Reglas de los planos:
+- Un objeto por bloque, en orden, con "index" de 0 a {len(blocks) - 1}.
+- El plano ilustra lo que se está diciendo en ese bloque concreto.
+- Varía: no repitas la misma visual_query en bloques consecutivos.
+- Material real de archivo espacial o render fotorrealista. Nunca diagramas, \
+nunca texto en pantalla, nunca personas hablando a cámara."""
+
+    log.info("Planificando %d planos y metadatos", len(blocks))
+    resp = client().messages.create(
+        model=config.SCRIPT_MODEL,
+        max_tokens=16000,
+        system=PLAN_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = resp.content[0].text.strip()
+    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # Rescate: quedarse con el primer objeto JSON bien formado del texto.
+        start = raw.find("{")
+        depth, end = 0, None
+        for i, ch in enumerate(raw[start:], start):
+            depth += (ch == "{") - (ch == "}")
+            if depth == 0:
+                end = i + 1
+                break
+        if end is None:
+            raise
+        return json.loads(raw[start:end])
+
+
+# --------------------------------------------------------------------------
+# API pública del módulo
+# --------------------------------------------------------------------------
+
+
+def build_plan(topic: dict, avoid: list[str]) -> VideoPlan:
+    narration = write_narration(topic, avoid)
+    blocks = _split_into_scenes(narration, config.WORDS_PER_SCENE)
+    plan = plan_production(topic, narration, blocks)
+
+    by_index = {int(s.get("index", i)): s for i, s in enumerate(plan.get("scenes", []))}
+    scenes = []
+    for i, block in enumerate(blocks):
+        meta = by_index.get(i, {})
+        scenes.append(
+            Scene(
+                index=i,
+                narration=block,
+                visual_query=(meta.get("visual_query") or topic["keyword"]).strip(),
+                visual_prompt=(meta.get("visual_prompt") or "").strip(),
+            )
+        )
+
+    thumb_word = (plan.get("thumb_word") or topic.get("thumb_word", "ÉTER")).upper().strip()
+    thumb_word = re.sub(r"[^A-ZÁÉÍÓÚÜÑ]", "", thumb_word)[:12] or "ÉTER"
+
+    return VideoPlan(
+        topic=topic,
+        title=(plan.get("title") or topic["title_hint"]).strip()[:100],
+        thumb_word=thumb_word,
+        description=(plan.get("description") or "").strip(),
+        tags=[t.strip() for t in plan.get("tags", []) if t.strip()][:35],
+        narration=narration,
+        scenes=scenes,
+    )
