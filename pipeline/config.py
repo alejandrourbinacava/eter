@@ -152,7 +152,20 @@ SFX_PROMPTS = {
         "Sparse metallic shimmer, a single struck resonance with a long cold "
         "ringing tail. Mysterious, distant, space documentary sting. No melody.", 4,
     ),
+    # Corto a propósito: en el gancho suena cada tres segundos y uno con cola
+    # larga se solaparía consigo mismo hasta volverse ruido continuo.
+    "corte": (
+        "Very short dark air whoosh, a quick pass of pressure with almost no "
+        "tail. Dry, subtle, cinematic edit transition. No music, no melody, "
+        "no impact hit.", 2,
+    ),
 }
+
+# Gancho: durante los primeros segundos suena un efecto en CADA corte de plano,
+# que caen entre 3 y 6 s. Es una técnica de retención —el primer minuto decide
+# si el espectador se queda— y funciona porque el sonido coincide con el corte
+# de imagen, no con una rejilla ciega.
+SFX_HOOK_SECONDS = float(os.getenv("ETER_SFX_HOOK", "60"))
 
 # Se genera con Suno a través de ai33 si no hay nada en brand/music.
 MUSIC_PROMPT = (

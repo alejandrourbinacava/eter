@@ -1,26 +1,31 @@
 """Efectos de sonido de transición.
 
-Tres sonidos, generados una vez con la API de efectos de ElevenLabs a través de
-ai33 y cacheados en `.cache/sfx/`. Cuestan 50 créditos por segundo, así que la
-paleta entera sale por 550 y luego sirve para todos los vídeos: eso además le
-da al canal una firma sonora reconocible, que es justo lo que se busca.
+Cuatro sonidos, generados una vez con la API de efectos de ElevenLabs a través
+de ai33 y cacheados en `.cache/sfx/`. Cuestan 50 créditos por segundo, así que
+la paleta entera sale por unos 650 y luego sirve para todos los vídeos: eso
+además le da al canal una firma sonora reconocible.
 
 Qué hace cada uno, medido sobre su envolvente real:
 
+  corte     Whoosh corto y seco, casi sin cola. Suena en CADA corte de plano
+            del arranque, que caen entre tres y seis segundos. Es el gancho: el
+            primer minuto decide si el espectador se queda. Tiene que ser corto
+            justamente porque se repite cada pocos segundos; uno con cola larga
+            se solaparía consigo mismo hasta volverse ruido continuo.
   impacto   Pico a los 0,4 s y cola larga hasta el silencio. Va sobre la frase
             que remata un razonamiento, no en el cambio de escena: un golpe en
             cada corte se convierte en un tic, y uno sobre «Ni uno.» subraya.
             El guionista marca esa frase y la transcripción de la locución da
             el segundo exacto en que se dice.
-  riser     Arranca en silencio y crece hasta el final. Va ANTES del corte, de
-            modo que su pico caiga justo donde entra la escena nueva.
+  riser     Arranca en silencio y crece hasta el final. Va ANTES del corte de
+            escena, de modo que su pico caiga donde entra la escena nueva.
   brillo    Golpe metálico seco con cola fría. Se reserva para los dos o tres
             giros grandes del guion.
 
-La contención es la mitad del trabajo. Nunca hay efectos en los cortes de
-plano, que son ciento ochenta: un golpe cada cuatro segundos convierte un
-documental en un tráiler. Y como mucho un impacto por bloque de narración, solo
-donde el guion remata de verdad.
+Pasado el gancho manda la contención: fuera de esos primeros segundos no hay
+efectos en los cortes de plano, que son ciento ochenta, y como mucho un impacto
+por bloque de narración. Un golpe cada cuatro segundos durante catorce minutos
+convierte un documental en un tráiler.
 """
 
 from __future__ import annotations
@@ -114,6 +119,43 @@ def _locate(scene, phrase: str) -> float | None:
     return None
 
 
+def _hook_cues(scenes, starts: list[float]) -> list[tuple[float, str]]:
+    """El gancho: un efecto en cada corte de plano del arranque.
+
+    No se usa una rejilla fija de tres segundos, sino los cortes reales del
+    montaje, que caen entre tres y seis. Sale la misma densidad y además el
+    sonido coincide con el cambio de imagen, que es lo que hace que se perciba
+    como intención y no como un metrónomo.
+
+    `shots.plan` es determinista y solo depende de la duración de las escenas,
+    así que aquí se puede calcular el mismo reparto que hará el montaje más
+    tarde, sin haber renderizado nada todavía.
+    """
+    if config.SFX_HOOK_SECONDS <= 0:
+        return []
+
+    from . import shots as shots_mod
+
+    plan = shots_mod.plan(scenes)
+    by_scene: dict[int, list] = {}
+    for shot in plan:
+        by_scene.setdefault(shot.scene_index, []).append(shot)
+
+    cues: list[tuple[float, str]] = []
+    for scene, start in zip(scenes, starts):
+        if start > config.SFX_HOOK_SECONDS:
+            break
+        clock = start
+        for i, shot in enumerate(by_scene.get(scene.index, [])):
+            clock += shot.duration
+            if clock > config.SFX_HOOK_SECONDS:
+                break
+            # Mayoría de whooshes cortos, con algún golpe para que respire.
+            kind = "impacto" if i and i % 4 == 3 else "corte"
+            cues.append((clock, kind))
+    return cues
+
+
 def plan_cues(scenes) -> list[tuple[float, str]]:
     """Dónde y qué suena. Devuelve (segundo, nombre_del_efecto).
 
@@ -122,6 +164,8 @@ def plan_cues(scenes) -> list[tuple[float, str]]:
 
     El reparto de papeles:
 
+      corte    En cada corte de plano de los primeros SFX_HOOK_SECONDS. Es el
+               gancho: el primer minuto decide si el espectador se queda.
       impacto  Sobre la frase que remata un razonamiento, no en el corte de
                escena. Un golpe en cada cambio se vuelve un tic; un golpe sobre
                «Ni uno.» subraya. Como el sonido tarda IMPACT_PEAK en llegar a
@@ -137,6 +181,8 @@ def plan_cues(scenes) -> list[tuple[float, str]]:
     for scene in scenes:
         starts.append(clock)
         clock += scene.duration + config.SCENE_GAP
+
+    cues += _hook_cues(scenes, starts)
 
     # --- impacto: sobre las frases marcadas por el guionista ---------------
     for scene, start in zip(scenes, starts):
@@ -165,7 +211,7 @@ def plan_cues(scenes) -> list[tuple[float, str]]:
 
 
 # Cuando dos efectos caen casi encima, gana el de más peso narrativo.
-_PRIORITY = {"impacto": 3, "riser": 2, "brillo": 1}
+_PRIORITY = {"impacto": 4, "riser": 3, "brillo": 2, "corte": 1}
 MIN_GAP = 1.2
 
 
