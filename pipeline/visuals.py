@@ -23,8 +23,11 @@ dwarf» un hámster y «europa clipper» un velero.
 
 Tres filtros sostienen la calidad:
 
-  `_is_space_clip`   exige que la descripción del clip de banco contenga
-                     vocabulario de espacio. Es lo que mata al hámster.
+  `_is_space_clip`   cruza la descripción del clip de banco contra tres listas:
+                     espacio, texturas terrestres que sirven de análogo (hielo
+                     agrietado, lava, hidrotermal) y exclusiones. Es lo que mata
+                     al hámster sin tirar el lago helado, que ilustra Encélado
+                     mejor que cualquier render genérico.
   `_svs`             restringe el SVS a `Visualization`, `Animation` y `B-Roll`,
                      y exige solape de palabras con la búsqueda. Sin lo primero
                      entran piezas divulgativas con presentador y rótulos; sin
@@ -122,30 +125,63 @@ def _library(query: str, pool: AssetPool) -> Path | None:
     return best
 
 
-# Vocabulario que debe aparecer en la descripción de un clip de banco para que
-# lo demos por bueno.
-#
 # Los bancos de stock NUNCA devuelven cero resultados: si no tienen lo que pides
-# devuelven lo que más se parezca por letras. Comprobado con esta misma clave:
+# devuelven lo que más se parezca por letras. Comprobado con estas claves:
 # «great red spot» devuelve un pájaro carpintero (great spotted woodpecker),
 # «kinman dwarf» un hámster enano, «europa clipper» un velero de cinco mástiles
-# y «wow signal» un teléfono GSM. Sin este filtro todo eso entraría en el vídeo.
+# y «wow signal» un teléfono GSM. Un clip solo se acepta si su descripción entra
+# en alguna de las dos listas de abajo y no cae en la de exclusión.
+
+# Espacio propiamente dicho.
 _SPACE_WORDS = {
     "space", "cosmic", "cosmos", "galaxy", "galactic", "nebula", "star", "stars",
     "starry", "starfield", "stellar", "planet", "planetary", "moon", "lunar",
     "orbit", "orbital", "astronaut", "universe", "celestial", "solar", "sun",
     "asteroid", "comet", "meteor", "meteorite", "aurora", "satellite", "spaceship",
     "spacecraft", "rocket", "milky", "astronomy", "astronomical", "telescope",
-    "supernova", "blackhole", "eclipse", "constellation", "sky", "night",
+    "supernova", "blackhole", "eclipse", "constellation", "interstellar",
     "earth", "mars", "jupiter", "saturn", "venus", "mercury", "neptune", "uranus",
-    "pluto", "interstellar", "deepspace", "atmosphere", "crater", "surface",
-    "particles", "energy", "plasma", "gravity", "horizon", "void", "abstract",
+    "pluto", "deepspace", "crater", "plasma",
+}
+
+# Texturas y fenómenos terrestres que sirven de análogo. Un plano de hielo
+# agrietado ilustra Encélado mejor que cualquier render genérico, y sin esta
+# lista se caían casi todos: «cracked ice texture» devolvía lagos helados
+# perfectos que el filtro tiraba por no decir «space».
+_TEXTURE_WORDS = {
+    "ice", "icy", "frozen", "freeze", "glacier", "glacial", "iceberg", "arctic",
+    "snow", "frost", "crack", "cracked", "crevasse", "cave",
+    "lava", "magma", "volcanic", "volcano", "eruption", "molten", "ember",
+    "water", "ocean", "sea", "wave", "underwater", "abyss", "depth", "deep",
+    "cloud", "storm", "lightning", "fog", "mist", "smoke", "vapor", "steam",
+    "particle", "particles", "energy", "abstract", "swirl", "vortex", "spiral",
+    "geyser", "hydrothermal", "vent", "sand", "dune", "rock", "stone", "canyon",
+    "night", "sky", "dark", "darkness", "void", "horizon", "atmosphere", "surface",
+}
+
+# Señales de que el clip no es un plano de recurso, pase lo que pase.
+_REJECT_WORDS = {
+    # bichos y gente
+    "woodpecker", "bird", "hamster", "dog", "cat", "fish", "jellyfish", "shark",
+    "turtle", "whale", "stingray", "crab", "coral", "reef", "seal", "lion",
+    "aquarium", "zoo", "wildlife", "animal", "pet", "insect", "butterfly",
+    "man", "woman", "girl", "boy", "people", "person", "child", "family",
+    "couple", "portrait", "model", "dancer", "worker", "chef", "doctor",
+    "diver", "scuba", "snorkel", "surfer", "swimmer", "swimming",
+    # sitios y objetos de la Tierra que rompen la ilusión
+    "city", "street", "traffic", "car", "building", "office", "kitchen", "food",
+    "restaurant", "shop", "market", "beach", "boat", "ship", "sailing", "yacht",
+    "lighthouse", "forest", "tree", "flower", "garden", "farm", "sport",
+    "phone", "laptop", "computer", "screen", "keyboard", "money", "gsm",
 }
 
 
 def _is_space_clip(text: str) -> bool:
-    """¿La descripción del clip habla realmente de espacio?"""
-    return bool(_tokens(text) & _SPACE_WORDS)
+    """¿La descripción del clip sirve como plano de este canal?"""
+    words = _tokens(text)
+    if words & _REJECT_WORDS:
+        return False
+    return bool(words & (_SPACE_WORDS | _TEXTURE_WORDS))
 
 
 def _pexels(query: str, pool: AssetPool) -> str | None:

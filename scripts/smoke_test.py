@@ -101,6 +101,7 @@ def main() -> int:
         topic={"title_hint": "smoke-test", "keyword": "europa jupiter moon"},
         title="El Océano De Europa Tiene Más Agua Que Toda La Tierra",
         thumb_word="OCÉANO",
+        thumb_prompt="Europa's cracked icy surface with Jupiter behind it",
         description="Prueba de humo.",
         tags=["europa", "júpiter", "océano"],
         narration=" ".join(blocks),

@@ -17,7 +17,8 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-from . import assemble, config, music, script_gen, sfx, thumbnail, topics, visuals, voice
+from . import (assemble, config, imagegen, music, script_gen, sfx, thumbnail,
+               topics, visuals, voice)
 from .util import log, require_binaries, setup_logging, write_json
 
 
@@ -139,6 +140,7 @@ def _load_plan(path: Path) -> script_gen.VideoPlan:
         topic=data["topic"],
         title=data["title"],
         thumb_word=data["thumb_word"],
+        thumb_prompt=data.get("thumb_prompt", ""),
         description=data["description"],
         tags=data["tags"],
         narration=data["narration"],
@@ -150,11 +152,18 @@ def _load_plan(path: Path) -> script_gen.VideoPlan:
 def _pick_hero(plan, workdir: Path, video: Path) -> Path | None:
     """La imagen de la miniatura, por orden de preferencia.
 
-    1. Una imagen dedicada del archivo de la NASA para el tema del vídeo.
-    2. La mejor imagen fija que ya se haya descargado para alguna escena.
-    3. Un fotograma del montaje, solo como último recurso: puede arrastrar
+    1. Generada a medida, si hay proveedor. Es lo único que reproduce las
+       composiciones dramáticas de las miniaturas publicadas del canal.
+    2. Una imagen dedicada del archivo de la NASA para el tema del vídeo.
+    3. La mejor imagen fija que ya se haya descargado para alguna escena.
+    4. Un fotograma del montaje, solo como último recurso: puede arrastrar
        rótulos quemados del material de origen.
     """
+    if imagegen.available():
+        generated = imagegen.hero(plan.topic, workdir / "hero_ia.jpg", plan)
+        if generated:
+            return generated
+
     query = plan.topic.get("keyword") or (plan.scenes[0].visual_query if plan.scenes else "")
     if query:
         try:

@@ -63,6 +63,8 @@ class VideoPlan:
     topic: dict
     title: str
     thumb_word: str
+    # Descripción en inglés de la imagen de la miniatura, para generarla.
+    thumb_prompt: str
     description: str
     tags: list[str]
     narration: str
@@ -77,6 +79,7 @@ class VideoPlan:
             "topic": self.topic,
             "title": self.title,
             "thumb_word": self.thumb_word,
+            "thumb_prompt": self.thumb_prompt,
             "description": self.description,
             "tags": self.tags,
             "narration": self.narration,
@@ -220,6 +223,7 @@ Devuelve este JSON exacto:
 {{
   "title": "título de 45-65 caracteres en Title Case, según la sección 6",
   "thumb_word": "UNA SOLA PALABRA EN MAYÚSCULAS, 5-10 letras",
+  "thumb_prompt": "EN INGLÉS, una frase describiendo la imagen de la miniatura: el objeto del vídeo en una composición dramática y fotorrealista sobre fondo negro. Sin texto ni rótulos, que la tipografía se añade aparte. Deja espacio oscuro a un lado para la palabra.",
   "description": "descripción de YouTube según la sección 7, con sus tres párrafos y emojis, sin los hashtags",
   "tags": ["25-30 etiquetas en español, de lo específico a lo genérico"],
   "scenes": [
@@ -320,6 +324,7 @@ def build_plan(topic: dict, avoid: list[str]) -> VideoPlan:
             )
         )
 
+    thumb_prompt = (plan.get("thumb_prompt") or "").strip()
     thumb_word = (plan.get("thumb_word") or topic.get("thumb_word", "ÉTER")).upper().strip()
     thumb_word = re.sub(r"[^A-ZÁÉÍÓÚÜÑ]", "", thumb_word)[:12] or "ÉTER"
 
@@ -327,6 +332,7 @@ def build_plan(topic: dict, avoid: list[str]) -> VideoPlan:
         topic=topic,
         title=(plan.get("title") or topic["title_hint"]).strip()[:100],
         thumb_word=thumb_word,
+        thumb_prompt=thumb_prompt,
         description=(plan.get("description") or "").strip(),
         tags=[t.strip() for t in plan.get("tags", []) if t.strip()][:35],
         narration=narration,
