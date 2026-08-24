@@ -68,7 +68,7 @@ scenes:
   6:
     query: communication satellite orbit
     generic: [satellite orbiting earth, solar panels in space, satellite dish night, orbital debris space]
-    emphasis: Pero todo eso, el pánico, el caos social, el colapso de comunicaciones, sería solo el primer capítulo de un proceso mucho más largo y mucho más devastador.
+    emphasis: "sería solo el primer capítulo"
   7:
     query: earth ocean from space
     generic: [ocean waves aerial, warm ocean surface, earth atmosphere limb, sea horizon dusk]
@@ -84,7 +84,7 @@ scenes:
   10:
     query: ice sheet glacier
     generic: [vast glacier aerial, thick ice sheet, frozen wasteland wide, deep blue glacier ice]
-    emphasis: Una glaciación no gradual sino instantánea en términos geológicos, tan rápida que ninguna especie tendría tiempo de adaptarse evolutivamente.
+    emphasis: "Una glaciación no gradual sino instantánea"
   11:
     query: photosynthesis leaves
     generic: [green leaves sunlight macro, forest canopy from below, plant leaves backlit, algae in water]
@@ -100,23 +100,23 @@ scenes:
   14:
     query: nuclear reactor cooling
     generic: [nuclear power plant night, geothermal steam vents, industrial cooling towers, glowing reactor core]
-    emphasis: Son las únicas fuentes de energía que seguirían funcionando en un mundo sin estrella.
+    emphasis: "en un mundo sin estrella"
   15:
     query: earth magnetic field
-    generic: [aurora borealis from space, magnetic field lines abstract, molten metal flowing, earth core cutaway]
+    generic: [aurora borealis from space, molten metal flowing, glowing lava flow, aurora over horizon]
     emphasis: El campo magnético terrestre.
   16:
     query: solar wind magnetosphere
-    generic: [aurora over earth night, charged particles abstract, solar wind stream, plasma flowing space]
+    generic: [aurora over earth night, solar wind plasma, sun corona streaming, aurora curtain sky]
     emphasis: Pero hay una interacción que sí desaparecería inmediatamente.
   17:
     query: coronal mass ejection
     generic: [solar eruption plasma, power grid night, electrical storm sky, sun flare closeup]
-    emphasis: Pero ese detalle apenas importa cuando la temperatura ha caído a cincuenta grados bajo cero y los sistemas de producción de alimentos han colapsado.
+    emphasis: "Pero ese detalle apenas importa"
   18:
     query: deep ocean water
     generic: [deep dark ocean water, underwater light rays, ocean depth abyss, cold sea surface]
-    emphasis: Pero en el fondo del océano, en los respiraderos hidrotermales, algo seguiría funcionando exactamente igual que antes.
+    emphasis: "algo seguiría funcionando exactamente igual que antes"
   19:
     query: hydrothermal vent ocean floor
     generic: [underwater hydrothermal vent, black smoker vent, deep sea floor dark, volcanic vent underwater]
@@ -127,11 +127,11 @@ scenes:
     emphasis: La vida no desaparecería de la Tierra si el Sol se apagara.
   21:
     query: primordial earth ocean
-    generic: [bacteria microscopic abstract, dark warm water bubbles, ancient ocean floor, mineral formation water]
+    generic: [bubbles rising dark water, mineral formations underwater, dark ocean floor, warm water plume]
     emphasis: La vida empezando de nuevo, desde abajo.
   22:
     query: nuclear power plant
-    generic: [reactor control room, industrial facility night, indoor grow lights, insulated shelter interior]
+    generic: [nuclear plant at night, industrial steam night, cooling tower vapour, warm light in snow]
     emphasis: ¿Podría sobrevivir la humanidad?
   23:
     query: iceland geothermal
@@ -140,19 +140,19 @@ scenes:
   24:
     query: frozen city abandoned
     generic: [abandoned frozen building, snow covered ruins, dark ice landscape, dim light in darkness]
-    emphasis: Pero en algún punto, sin la estrella que hizo posible todo lo que somos, el final sería inevitable.
+    emphasis: "el final sería inevitable"
   25:
     query: gravity spacetime curvature
-    generic: [gravity well abstract, spacetime grid warping, orbital mechanics animation, planet orbiting star]
+    generic: [planet orbiting star, moon circling planet, star with orbiting planet, dark planet slow spin]
     emphasis: La gravedad del Sol no desaparecería.
   26:
     query: rogue planet interstellar
     generic: [lone planet in dark space, planet drifting away, dark world no star, planet leaving orbit]
-    emphasis: Sería un planeta errante, exactamente como los que hemos descrito en otro momento, lanzado hacia la oscuridad del espacio interestelar sin ninguna estrella que lo ancle, viajando en línea recta hacia ningún lugar en particular a 30 kilómetros por segundo.
+    emphasis: "Sería un planeta errante"
   27:
     query: solar system planets orbit
     generic: [planets in a row space, planet drifting apart, solar system animation, planets scattering dark]
-    emphasis: El sistema solar, en el sentido de un conjunto de planetas organizados alrededor de una estrella, dejaría de existir ocho minutos después de que el Sol se apagara.
+    emphasis: "dejaría de existir ocho minutos después"
   28:
     query: red giant star
     generic: [expanding star space, star aging animation, orange giant star, stellar evolution abstract]
@@ -160,7 +160,7 @@ scenes:
   29:
     query: star formation nebula
     generic: [gas cloud collapsing, nebula forming star, protostar dust cloud, cosmic gas swirling]
-    emphasis: Esa estrella lleva ardiendo desde entonces, sin interrupciones, sin que nadie se lo pidiera, sin que nadie lo agradeciera, produciendo cada segundo la energía que hace posible todo lo que conoces.
+    emphasis: "Esa estrella lleva ardiendo desde entonces"
   30:
     query: earth habitable zone
     generic: [earth from deep space, blue planet rotating, ocean evaporating heat, sun over earth limb]

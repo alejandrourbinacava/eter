@@ -173,6 +173,12 @@ _REJECT_WORDS = {
     "restaurant", "shop", "market", "beach", "boat", "ship", "sailing", "yacht",
     "lighthouse", "forest", "tree", "flower", "garden", "farm", "sport",
     "phone", "laptop", "computer", "screen", "keyboard", "money", "gsm",
+    # Estética «tecnológica» que los bancos devuelven en cuanto pides algo
+    # abstracto: lluvia de código verde, interfaces, circuitos. Es lo que se
+    # coló pidiendo «particles» y «energy».
+    "matrix", "digital", "code", "coding", "binary", "hud", "interface",
+    "circuit", "chip", "server", "hologram", "futuristic", "cyber", "tech",
+    "technology", "network", "blockchain", "bitcoin", "dashboard", "ui",
 }
 
 
@@ -253,6 +259,28 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
 _SVS_API = "https://svs.gsfc.nasa.gov/api"
 # Solo CGI científico. Ver la explicación en _svs().
 _SVS_TYPES = {"Visualization", "Animation", "B-Roll"}
+
+# El grueso de lo que el SVS etiqueta como «Visualization» son productos de
+# DATOS, no metraje: «ICESat-2 Land Ice Height Change (2020-2025)», «GRACE and
+# GRACE-FO polar ice mass loss», «Map of the August 12 2026 Eclipse». Llevan
+# leyenda, escala de color y fecha quemadas en la imagen por definición, y son
+# los que colaron un gráfico entero del hielo de Groenlandia en el minuto 12.
+#
+# No hay forma de verlos por píxeles: el rótulo es gris, pequeño y de bajo
+# contraste, y el detector de texto puntúa cero incluso a 640x360. La única
+# señal fiable es el título.
+_SVS_DATA_WORDS = (
+    "data", "dataset", "mass loss", "mass change", "height change", "sea level",
+    "index", "trend", "anomaly", "time series", "measurements", "observations",
+    "map of", "maps of", "coverage", "concentration", "monthly", "annual",
+    "daily", "record", "maximum", "minimum", "average", "statistics", "survey",
+    "fleet", "constellation", "orbit tracks", "ground track", "swath",
+    "graphics", "briefing", "chart", "plot", "diagram", "infographic",
+    "comparison", "timeline", "model output", "simulation output", "forecast",
+    "icesat", "grace", "modis", "viirs", "goes-", "smap", "airs",
+)
+# Rangos de años en el título: casi siempre delatan una serie temporal.
+_SVS_YEAR_RANGE = re.compile(r"\b(19|20)\d{2}\s*[-–—]\s*(19|20)?\d{2}\b")
 _SVS_RES = re.compile(r"(?:^|[^0-9])(\d{3,4})(?:p\d*|x\d+p\d+)?\.mp4$", re.I)
 
 
@@ -303,6 +331,11 @@ def _svs(query: str, pool: AssetPool) -> str | None:
         title = (result.get("title") or "").lower()
         if any(noise in title for noise in _NASA_NOISE):
             continue
+        # Los productos de datos llevan leyenda y fecha quemadas. Ver arriba.
+        if result.get("result_type") != "Animation":
+            if any(w in title for w in _SVS_DATA_WORDS) or _SVS_YEAR_RANGE.search(title):
+                log.debug("  svs descartado por ser producto de datos: %s", title[:56])
+                continue
         # El buscador del SVS puntúa flojo y cuela resultados sin relación:
         # para «europa jupiter moon» devolvía primero un diagrama orbital de la
         # flota de satélites. Se exige que comparta alguna palabra de verdad.

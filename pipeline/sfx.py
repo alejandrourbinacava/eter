@@ -98,8 +98,14 @@ def palette() -> dict[str, Path]:
 def _locate(scene, phrase: str) -> float | None:
     """Segundo, dentro de la escena, en que empieza a decirse `phrase`.
 
-    Se casa la frase contra la lista de palabras de la transcripción, no contra
-    el texto: así el tiempo es el real y no una estimación por longitud.
+    Se casa contra la lista de palabras de la transcripción, no contra el texto:
+    así el tiempo es el real y no una estimación por longitud.
+
+    Se prueba la frase entera y luego prefijos cada vez más cortos. Hace falta
+    porque la transcripción devuelve lo que se OYE, no lo que está escrito: el
+    guion pone «a 30 kilómetros por segundo» y la voz dice «treinta», así que
+    una frase larga con cifras nunca casa entera. Y da igual: lo único que
+    importa es dónde EMPIEZA, que es donde cae el golpe.
     """
     words = scene.words or []
     if not words:
@@ -113,9 +119,13 @@ def _locate(scene, phrase: str) -> float | None:
         return None
 
     seq = [norm(w["text"]) for w in words]
-    for i in range(len(seq) - len(target) + 1):
-        if seq[i:i + len(target)] == target:
-            return float(words[i]["start"])
+    for length in (len(target), 6, 4, 3):
+        if length > len(target):
+            continue
+        probe = target[:length]
+        for i in range(len(seq) - length + 1):
+            if seq[i:i + length] == probe:
+                return float(words[i]["start"])
     return None
 
 
