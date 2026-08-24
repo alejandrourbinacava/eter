@@ -182,6 +182,12 @@ _REJECT_WORDS = {
     # Estética «tecnológica» que los bancos devuelven en cuanto pides algo
     # abstracto: lluvia de código verde, interfaces, circuitos. Es lo que se
     # coló pidiendo «particles» y «energy».
+    # Infraestructura y paisaje terrestre. «solar panel farm» comparte la
+    # palabra «solar» con media docena de búsquedas espaciales y se coló una
+    # huerta fotovoltaica en un vídeo sobre el Sol.
+    "panel", "panels", "photovoltaic", "turbine", "windmill", "powerplant",
+    "roof", "village", "town", "road", "highway", "bridge", "mountain",
+    "mountains", "hill", "hills", "meadow", "grass", "landscape", "valley",
     "matrix", "digital", "code", "coding", "binary", "hud", "interface",
     "circuit", "chip", "server", "hologram", "futuristic", "cyber", "tech",
     "technology", "network", "blockchain", "bitcoin", "dashboard", "ui",
@@ -220,6 +226,18 @@ def _matches_query(text: str, query: str) -> bool:
     return bool(_tokens(text) & wanted)
 
 
+# Palabras que sitúan la cámara FUERA de la Tierra. Si la búsqueda las lleva,
+# el clip también tiene que llevar alguna: «earth clouds from space» pedía la
+# Tierra vista desde órbita y devolvía nubes al atardecer desde el suelo.
+_ORBITAL_CUES = {"space", "orbit", "orbital", "orbiting", "earth", "planet",
+                 "planetary", "moon", "satellite", "iss", "station", "cosmic",
+                 "galaxy", "nebula", "star", "stars", "interstellar", "deepspace"}
+
+
+def _from_orbit(text: str) -> bool:
+    return bool(_tokens(text) & _ORBITAL_CUES)
+
+
 def _is_space_clip(text: str, query: str = "") -> bool:
     """¿La descripción del clip sirve como plano de este canal?
 
@@ -236,6 +254,10 @@ def _is_space_clip(text: str, query: str = "") -> bool:
     if words & prohibidas:
         return False
     if not _matches_query(text, query):
+        return False
+    # Coherencia de punto de vista: si se pide algo visto desde el espacio, el
+    # clip tiene que estar en el espacio.
+    if _from_orbit(query) and not _from_orbit(text):
         return False
     return bool(words & (_SPACE_WORDS | _TEXTURE_WORDS | _tokens(query)))
 
