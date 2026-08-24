@@ -127,7 +127,12 @@ TRANSITIONS = (
 # narración; por encima de -14 el vídeo empieza a sonar a tráiler.
 SFX_DB = float(os.getenv("ETER_SFX_DB", "-20"))
 
-# Solo en los cambios de escena, nunca en los cortes de plano.
+# El impacto tarda esto en llegar a su pico, medido sobre su envolvente. Se
+# dispara con esa antelación para que el golpe caiga EN la palabra marcada.
+IMPACT_PEAK = 0.40
+
+# El impacto va sobre las frases que rematan; riser y brillo, en los cambios
+# de escena. Nunca en los cortes de plano.
 SFX_ENABLED = os.getenv("ETER_SFX", "1") not in ("0", "false", "no")
 
 SFX_CACHE = CACHE_DIR / "sfx"

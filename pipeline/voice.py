@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 
 from . import ai33, config
-from .util import ffmpeg, log, probe_duration
+from .util import ffmpeg, log, probe_duration, read_json, write_json
 
 
 def narrate(scenes, workdir: Path) -> list:
@@ -22,8 +22,21 @@ def narrate(scenes, workdir: Path) -> list:
 
     for scene in scenes:
         dest = audio_dir / f"scene_{scene.index:03d}.mp3"
-        if not dest.exists():
-            ai33.tts(_prepare_for_tts(scene.narration), dest)
+        words_file = audio_dir / f"scene_{scene.index:03d}.words.json"
+
+        if dest.exists() and words_file.exists():
+            scene.words = read_json(words_file, [])
+        elif dest.exists():
+            scene.words = []
+        else:
+            # La transcripción cuesta unos 21 créditos y da los tiempos de cada
+            # palabra: es lo que permite que un golpe caiga sobre la palabra
+            # exacta en vez de estimarla por regla de tres.
+            scene.words = ai33.tts(
+                _prepare_for_tts(scene.narration), dest, transcript=True
+            )
+            write_json(words_file, scene.words)
+
         scene.audio_path = str(dest)
         scene.duration = probe_duration(dest)
         log.info(

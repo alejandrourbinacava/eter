@@ -48,6 +48,11 @@ class Scene:
     visual_generic: list = field(default_factory=list)
     # Prompt fotorrealista por si hay que generar el plano.
     visual_prompt: str = ""
+    # Frases del bloque que merecen un golpe de sonido. Literales del texto.
+    emphasis: list = field(default_factory=list)
+    # Palabras con sus tiempos, que devuelve la locución. Es lo que permite
+    # colocar ese golpe sobre la palabra exacta.
+    words: list = field(default_factory=list)
     audio_path: str | None = None
     clip_path: str | None = None
     duration: float = 0.0
@@ -221,7 +226,8 @@ Devuelve este JSON exacto:
     {{
       "index": 0,
       "visual_query": "2-4 palabras EN INGLÉS para buscar en archivos de vídeo de la NASA y bancos de imágenes. Concreto y filmable: 'saturn rings closeup', 'solar flare eruption'. Nunca abstracto: nada de 'human curiosity' ni 'the passage of time'.",
-      "visual_prompt": "una frase EN INGLÉS describiendo un plano fotorrealista de documental para ese bloque, por si hay que generarlo"
+      "visual_prompt": "una frase EN INGLÉS describiendo un plano fotorrealista de documental para ese bloque, por si hay que generarlo",
+      "emphasis": "LA frase del bloque que más golpea, copiada LITERAL Y EXACTA del texto, tal cual aparece. Cadena vacía si el bloque no tiene ninguna."
     }}
   ]
 }}
@@ -267,6 +273,23 @@ _FALLBACK_GENERIC = ["deep space stars", "cosmic nebula", "planet in space",
                      "galaxy in deep space"]
 
 
+def _emphasis_list(value, block: str) -> list[str]:
+    """Se queda solo con las frases que aparecen LITERALES en el bloque.
+
+    El modelo tiende a reescribir levemente lo que cita. Una frase que no está
+    en el texto no se puede localizar en la transcripción, así que se descarta
+    en vez de colocar el golpe a ojo.
+    """
+    if isinstance(value, str):
+        value = [value]
+    out = []
+    for item in value or []:
+        phrase = str(item).strip().strip('"«»')
+        if len(phrase) >= 4 and phrase in block:
+            out.append(phrase)
+    return out[:1]
+
+
 def _generic_list(value) -> list[str]:
     """Normaliza `visual_generic` a una lista de búsquedas utilizables."""
     if isinstance(value, str):
@@ -293,6 +316,7 @@ def build_plan(topic: dict, avoid: list[str]) -> VideoPlan:
                 visual_query=(meta.get("visual_query") or topic["keyword"]).strip(),
                 visual_generic=_generic_list(meta.get("visual_generic")),
                 visual_prompt=(meta.get("visual_prompt") or "").strip(),
+                emphasis=_emphasis_list(meta.get("emphasis"), block),
             )
         )
 

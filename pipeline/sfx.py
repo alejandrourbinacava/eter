@@ -7,16 +7,20 @@ da al canal una firma sonora reconocible, que es justo lo que se busca.
 
 Qué hace cada uno, medido sobre su envolvente real:
 
-  impacto   Pico a los 0,4 s y cola larga hasta el silencio. Va EN el corte.
-            Es el que da peso al cambio de escena.
+  impacto   Pico a los 0,4 s y cola larga hasta el silencio. Va sobre la frase
+            que remata un razonamiento, no en el cambio de escena: un golpe en
+            cada corte se convierte en un tic, y uno sobre «Ni uno.» subraya.
+            El guionista marca esa frase y la transcripción de la locución da
+            el segundo exacto en que se dice.
   riser     Arranca en silencio y crece hasta el final. Va ANTES del corte, de
             modo que su pico caiga justo donde entra la escena nueva.
   brillo    Golpe metálico seco con cola fría. Se reserva para los dos o tres
             giros grandes del guion.
 
-La contención es la mitad del trabajo. Los efectos van solo en los cambios de
-escena —unos veinticinco por vídeo—, nunca en los ciento ochenta cortes de
-plano. Un golpe cada cuatro segundos convierte un documental en un tráiler.
+La contención es la mitad del trabajo. Nunca hay efectos en los cortes de
+plano, que son ciento ochenta: un golpe cada cuatro segundos convierte un
+documental en un tráiler. Y como mucho un impacto por bloque de narración, solo
+donde el guion remata de verdad.
 """
 
 from __future__ import annotations
@@ -86,36 +90,107 @@ def palette() -> dict[str, Path]:
     return out
 
 
+def _locate(scene, phrase: str) -> float | None:
+    """Segundo, dentro de la escena, en que empieza a decirse `phrase`.
+
+    Se casa la frase contra la lista de palabras de la transcripción, no contra
+    el texto: así el tiempo es el real y no una estimación por longitud.
+    """
+    words = scene.words or []
+    if not words:
+        return None
+
+    def norm(text: str) -> str:
+        return "".join(c for c in text.lower() if c.isalnum())
+
+    target = [norm(w) for w in phrase.split() if norm(w)]
+    if not target:
+        return None
+
+    seq = [norm(w["text"]) for w in words]
+    for i in range(len(seq) - len(target) + 1):
+        if seq[i:i + len(target)] == target:
+            return float(words[i]["start"])
+    return None
+
+
 def plan_cues(scenes) -> list[tuple[float, str]]:
     """Dónde y qué suena. Devuelve (segundo, nombre_del_efecto).
 
-    El instante de cada cambio de escena es la suma de las escenas anteriores
-    más sus pausas, el mismo reloj que usa voice.mix para concatenar el audio.
+    El reloj es el mismo que usa voice.mix al concatenar: cada escena empieza
+    en la suma de las anteriores más sus pausas.
+
+    El reparto de papeles:
+
+      impacto  Sobre la frase que remata un razonamiento, no en el corte de
+               escena. Un golpe en cada cambio se vuelve un tic; un golpe sobre
+               «Ni uno.» subraya. Como el sonido tarda IMPACT_PEAK en llegar a
+               su pico, se dispara antes para que el pico caiga en la palabra.
+      riser     Muere en el corte de escena, uno de cada tres.
+      brillo    La grieta del principio y el cierre.
     """
     cues: list[tuple[float, str]] = []
-    clock = 0.0
-    boundaries: list[float] = []
-    for scene in scenes[:-1]:
-        clock += scene.duration + config.SCENE_GAP
-        boundaries.append(clock)
 
+    # Instante en que arranca cada escena.
+    starts: list[float] = []
+    clock = 0.0
+    for scene in scenes:
+        starts.append(clock)
+        clock += scene.duration + config.SCENE_GAP
+
+    # --- impacto: sobre las frases marcadas por el guionista ---------------
+    for scene, start in zip(scenes, starts):
+        for phrase in (scene.emphasis or [])[:1]:
+            inside = _locate(scene, phrase)
+            if inside is None:
+                log.debug("  sin tiempo para «%s», se omite el golpe", phrase[:40])
+                continue
+            at = start + inside - config.IMPACT_PEAK
+            if at > 0.5:
+                cues.append((at, "impacto"))
+
+    # --- riser y brillo: en los cambios de escena --------------------------
+    boundaries = starts[1:]
     total = len(boundaries)
     for i, at in enumerate(boundaries, start=1):
-        # El impacto cae en el corte, siempre.
-        cues.append((at, "impacto"))
-
-        # El riser tiene que MORIR en el corte, así que empieza antes.
         if i % 3 == 0:
             riser = config.SFX_PROMPTS["riser"][1]
-            start = at - riser + 0.15
-            if start > 0.5:
-                cues.append((start, "riser"))
-
-        # El brillo se reserva para la grieta del principio y el cierre.
+            begin = at - riser + 0.15
+            if begin > 0.5:
+                cues.append((begin, "riser"))
         if i == 1 or i == total:
             cues.append((at, "brillo"))
 
-    return sorted(cues)
+    return _declutter(sorted(cues))
+
+
+# Cuando dos efectos caen casi encima, gana el de más peso narrativo.
+_PRIORITY = {"impacto": 3, "riser": 2, "brillo": 1}
+MIN_GAP = 1.2
+
+
+def _declutter(cues: list[tuple[float, str]]) -> list[tuple[float, str]]:
+    """Descarta disparos que se pisan entre sí.
+
+    Un impacto y un riser separados por tres décimas no se leen como dos
+    intenciones: se leen como barro. Cuando compiten, sobrevive el impacto,
+    que es el que subraya lo que se está diciendo.
+    """
+    kept: list[tuple[float, str]] = []
+    for at, kind in cues:
+        clash = next(
+            (j for j, (t, _) in enumerate(kept) if abs(t - at) < MIN_GAP), None
+        )
+        if clash is None:
+            kept.append((at, kind))
+            continue
+        if _PRIORITY[kind] > _PRIORITY[kept[clash][1]]:
+            log.debug("  «%s» desplaza a «%s» en %.2fs", kind, kept[clash][1], at)
+            kept[clash] = (at, kind)
+        else:
+            log.debug("  «%s» descartado en %.2fs, choca con «%s»",
+                      kind, at, kept[clash][1])
+    return sorted(kept)
 
 
 def build_bed(cues: list[tuple[float, str]], sounds: dict[str, Path],

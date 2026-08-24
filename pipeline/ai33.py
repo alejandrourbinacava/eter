@@ -59,8 +59,21 @@ def wait_for_task(task_id: str, *, timeout: int = 900, interval: float = 4.0) ->
 # --------------------------------------------------------------------------
 
 
-def tts(text: str, dest: Path, *, voice_id: str | None = None, speed: float | None = None) -> Path:
-    """Sintetiza `text` y deja el MP3 en `dest`."""
+def tts(
+    text: str,
+    dest: Path,
+    *,
+    voice_id: str | None = None,
+    speed: float | None = None,
+    transcript: bool = False,
+) -> list[dict]:
+    """Sintetiza `text` y deja el MP3 en `dest`.
+
+    Con `transcript=True` devuelve además la lista de palabras con sus tiempos
+    de inicio y fin en segundos, con precisión de milisegundos. Cuesta unos 21
+    créditos por escena y es lo que permite hacer caer un golpe de sonido justo
+    sobre una palabra concreta, en vez de estimarla por regla de tres.
+    """
     voice_id = voice_id or config.VOICE_ID
     speed = config.VOICE_SPEED if speed is None else speed
 
@@ -72,7 +85,7 @@ def tts(text: str, dest: Path, *, voice_id: str | None = None, speed: float | No
             "text": (None, text),
             "voice_id": (None, voice_id),
             "speed": (None, str(speed)),
-            "with_transcript": (None, "false"),
+            "with_transcript": (None, "true" if transcript else "false"),
         },
         timeout=120,
     )
@@ -81,14 +94,36 @@ def tts(text: str, dest: Path, *, voice_id: str | None = None, speed: float | No
         raise RuntimeError(f"TTS rechazado: {payload}")
 
     task = wait_for_task(payload["task_id"])
-    url = (task.get("metadata") or {}).get("audio_url")
+    meta = task.get("metadata") or {}
+    url = meta.get("audio_url")
     if not url:
         raise RuntimeError(f"TTS sin audio_url: {json.dumps(task)[:400]}")
 
     # La URL lleva ?name=...&dl=1; el fichero está en la ruta base.
     download(url.split("?")[0], dest)
     log.debug("  voz: %s (%d créditos)", dest.name, task.get("credit_cost", 0))
-    return dest
+
+    if not transcript:
+        return []
+    return _words(meta.get("json_url"))
+
+
+def _words(json_url: str | None) -> list[dict]:
+    """Descarga la transcripción y se queda con las palabras reales."""
+    if not json_url:
+        return []
+    try:
+        data = http("GET", json_url.split("?")[0]).json()
+    except (RuntimeError, ValueError):
+        log.debug("  sin transcripción utilizable")
+        return []
+    if isinstance(data, list):
+        data = data[0] if data else {}
+    return [
+        {"text": w["text"], "start": float(w["start"]), "end": float(w["end"])}
+        for w in (data.get("words") or [])
+        if w.get("type") == "word" and w.get("text")
+    ]
 
 
 # --------------------------------------------------------------------------

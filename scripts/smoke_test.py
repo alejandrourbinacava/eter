@@ -59,24 +59,29 @@ la Tierra bastó una vez. Una sola vez, que sepamos.\
 """
 
 # (sujeto concreto para los archivos científicos, descripción genérica para los
-# bancos de stock, prompt por si hubiera que generar el plano)
+# bancos de stock, prompt por si hubiera que generar el plano, y la frase de
+# remate sobre la que caerá el golpe de sonido)
 VISUALS = [
     ("Europa Jupiter moon",
      ["cracked ice texture", "frozen planet in space", "deep dark ocean water",
       "icy surface closeup"],
-     "Photorealistic view of Europa's cracked icy surface"),
+     "Photorealistic view of Europa's cracked icy surface",
+     "Debería ser una bola de hielo muerta."),
     ("Galileo spacecraft Jupiter",
      ["spacecraft in deep space", "satellite orbiting planet", "gas giant clouds",
       "magnetic field aurora"],
-     "A spacecraft passing above a fractured ice moon"),
+     "A spacecraft passing above a fractured ice moon",
+     "Agua salada."),
     ("Io volcanic moon",
      ["volcanic eruption lava", "gas giant in space", "molten rock glowing",
       "planet orbiting star"],
-     "Tidal flexing of a moon lit by an enormous gas giant"),
+     "Tidal flexing of a moon lit by an enormous gas giant",
+     "Sin una estrella cerca. Sin luz."),
     ("Europa Clipper mission",
      ["probe flying through space", "underwater hydrothermal vent", "ice cave blue",
       "distant sun in space"],
-     "A probe approaching an ice-covered ocean world"),
+     "A probe approaching an ice-covered ocean world",
+     "Una sola vez, que sepamos."),
 ]
 
 
@@ -87,7 +92,8 @@ def main() -> int:
     blocks = [b.strip().replace("\n", " ") for b in NARRATION.split("\n\n") if b.strip()]
     scenes = [
         Scene(index=i, narration=b, visual_query=VISUALS[i][0],
-              visual_generic=VISUALS[i][1], visual_prompt=VISUALS[i][2])
+              visual_generic=VISUALS[i][1], visual_prompt=VISUALS[i][2],
+              emphasis=[VISUALS[i][3]])
         for i, b in enumerate(blocks)
     ]
 
