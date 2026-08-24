@@ -679,7 +679,7 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         d.mkdir(parents=True, exist_ok=True)
 
     stats = {"biblioteca": 0, "pexels": 0, "pixabay": 0, "svs": 0,
-             "nasa-video": 0, "nasa-imagen": 0}
+             "nasa-video": 0, "generado": 0, "nasa-imagen": 0}
 
     if library_index():
         log.info("Biblioteca local: %d clips propios disponibles", len(library_index()))
