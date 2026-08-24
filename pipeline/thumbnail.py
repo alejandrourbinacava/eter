@@ -12,9 +12,14 @@ INEXPLICABLE), la plantilla es:
                          halo suave. Ocupa entre el 64 % y el 74 % del ancho y
                          entre el 23 % y el 41 % del alto.
 
-  Colocación             Centro vertical en torno al 47 %. Las palabras cortas
-                         van pegadas a la izquierda (margen del 4 %); las
-                         largas, que casi llenan el ancho, quedan centradas.
+  Colocación             Centro vertical en torno al 47 %. En horizontal, el
+                         texto va DONDE NO ESTÁ EL MOTIVO: en PROHIBIDO y
+                         DIFÍCIL el objeto está a la derecha y la palabra a la
+                         izquierda; en INEXPLICABLE la antena está abajo a la
+                         derecha. La excepción es cuando el motivo llena el
+                         cuadro, como la galaxia de IMPOSIBLE: ahí se centra
+                         encima. Eso lo decide `_subject_side` midiendo el
+                         centro de masa del brillo.
 
 Ese es el motivo de que aquí no se recorte ni se funda la imagen: la versión
 anterior dejaba un tercio izquierdo en negro plano y se veía a la legua que no
@@ -118,14 +123,67 @@ def _fit(word: str) -> tuple[ImageFont.FreeTypeFont, tuple[int, int, int, int]]:
     return best, best.getbbox(word)
 
 
+# Umbrales del centro de masa del brillo, calibrados sobre las cuatro
+# miniaturas publicadas: PROHIBIDO 0,576, DIFÍCIL 0,666 e INEXPLICABLE 0,568
+# llevan el texto a la izquierda; IMPOSIBLE, con 0,509, va centrado.
+SIDE_THRESHOLD = 0.54
+
+
+def _subject_side(canvas: Image.Image) -> str:
+    """Dónde está el motivo: 'izquierda', 'derecha' o 'centro'.
+
+    Devuelve el lado en que debe ir EL TEXTO, que es el contrario al motivo.
+
+    Se pesa el brillo por columnas: sobre fondo negro, el centro de masa de la
+    luz es el objeto. Se descarta el blanco puro y sin saturación para que la
+    función se pueda validar contra miniaturas que ya llevan la palabra puesta;
+    en el pipeline se invoca antes de dibujarla y no hay nada que descartar.
+
+    No se mide cuánto ocupa el motivo, solo dónde está. Se probó lo primero y
+    era ruido: IMPOSIBLE ocupa lo mismo que DIFÍCIL y se centra únicamente
+    porque su galaxia está en el eje.
+    """
+    small = canvas.convert("RGB").resize((160, 90))
+    px = small.load()
+
+    total = weighted = 0.0
+    for y in range(90):
+        for x in range(160):
+            r, g, b = px[x, y]
+            lum = (r * 299 + g * 587 + b * 114) // 1000
+            if lum < 30:                                    # fondo
+                continue
+            if lum > 215 and max(r, g, b) - min(r, g, b) < 25:   # texto blanco
+                continue
+            total += lum
+            weighted += lum * x
+    if total <= 0:
+        return "centro"
+
+    centroid = weighted / total / 160          # 0 = izquierda, 1 = derecha
+    if centroid > SIDE_THRESHOLD:
+        return "izquierda"
+    if centroid < 1 - SIDE_THRESHOLD:
+        return "derecha"
+    return "centro"
+
+
 def _draw_word(canvas: Image.Image, word: str) -> None:
     font, box = _fit(word)
     text_w, text_h = box[2] - box[0], box[3] - box[1]
 
+    # Las palabras que casi llenan el ancho no tienen elección.
     if text_w >= W * CENTER_ABOVE:
-        x = (W - text_w) // 2 - box[0]
+        side = "centro"
     else:
+        side = _subject_side(canvas)
+
+    if side == "izquierda":
         x = int(W * TEXT_MARGIN) - box[0]
+    elif side == "derecha":
+        x = W - text_w - int(W * TEXT_MARGIN) - box[0]
+    else:
+        x = (W - text_w) // 2 - box[0]
     y = int(H * TEXT_CENTER_Y) - text_h // 2 - box[1]
 
     # Halo en dos capas, como en las miniaturas del canal: una ancha y tenue
@@ -139,8 +197,7 @@ def _draw_word(canvas: Image.Image, word: str) -> None:
     ImageDraw.Draw(canvas).text((x, y), word, font=font, fill=(255, 255, 255))
 
     log.debug("  texto: %d px de alto (%.0f %%), ancho %.0f %%, %s",
-              text_h, text_h / H * 100, text_w / W * 100,
-              "centrado" if text_w >= W * CENTER_ABOVE else "a la izquierda")
+              text_h, text_h / H * 100, text_w / W * 100, side)
 
 
 def hero_frame(video: Path, dest: Path, at: float = 12.0) -> Path:
