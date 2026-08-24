@@ -103,6 +103,52 @@ SHOT_RHYTHM = (5.5, 3.6, 4.8, 6.0, 3.2, 5.0, 4.2, 5.8, 3.8, 4.5)
 
 MUSIC_DB = float(os.getenv("ETER_MUSIC_DB", "-25"))  # bajo la voz
 
+# --------------------------------------------------------------------------
+# Transiciones
+# --------------------------------------------------------------------------
+# Paleta que se recorre en bucle en los cambios de ESCENA. Dentro de una escena
+# el corte es seco: encadenar 180 planos con efectos sería insoportable.
+#
+# Domina el fundido cruzado porque es el que no se nota, que es lo que quieres
+# la mayor parte del tiempo. `fadeblack` da un respiro y marca los cambios de
+# bloque del guion. `dissolve` y `smoothleft` aportan variedad sin llamar la
+# atención. Fuera quedan barridos, deslizamientos y pixelados: delatan la
+# plantilla al instante.
+TRANSITIONS = (
+    "fade", "fade", "fadeblack", "fade", "dissolve",
+    "fade", "smoothleft", "fade", "fadeblack", "fade",
+    "circleopen", "fade", "fade", "smoothright", "fade",
+)
+
+# --------------------------------------------------------------------------
+# Efectos de sonido de transición
+# --------------------------------------------------------------------------
+# Nivel por debajo de la voz. A -20 dB se siente en el pecho sin tapar la
+# narración; por encima de -14 el vídeo empieza a sonar a tráiler.
+SFX_DB = float(os.getenv("ETER_SFX_DB", "-20"))
+
+# Solo en los cambios de escena, nunca en los cortes de plano.
+SFX_ENABLED = os.getenv("ETER_SFX", "1") not in ("0", "false", "no")
+
+SFX_CACHE = CACHE_DIR / "sfx"
+
+# Tres sonidos, cada uno con su función. Duración en segundos.
+SFX_PROMPTS = {
+    "impacto": (
+        "Deep cinematic sub-bass impact hit, dark and heavy, with a long "
+        "reverberant tail decaying into silence. No music, no melody, no drums. "
+        "Documentary scene transition.", 4,
+    ),
+    "riser": (
+        "Slow reverse riser swelling from silence, dark and tense, cut short at "
+        "the peak. Airy, cinematic, unsettling. No music, no melody.", 3,
+    ),
+    "brillo": (
+        "Sparse metallic shimmer, a single struck resonance with a long cold "
+        "ringing tail. Mysterious, distant, space documentary sting. No melody.", 4,
+    ),
+}
+
 # Se genera con Suno a través de ai33 si no hay nada en brand/music.
 MUSIC_PROMPT = (
     "Dark cinematic space documentary underscore. Slow sustained synth pads in a "

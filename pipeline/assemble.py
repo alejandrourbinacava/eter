@@ -8,6 +8,7 @@ y el fundido entra sobre la pausa entre escenas, no sobre una palabra.
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 
 from . import config
@@ -45,15 +46,18 @@ def render(scenes, audio: Path, dest: Path) -> Path:
 
     offset = 0.0
     current = "v0"
+    used: list[str] = []
     for i in range(1, len(clips)):
         # Encadenar aquí deja el acumulado justo en offset + CROSSFADE, que es
         # exactamente lo que xfade necesita para el solape siguiente.
         offset += lengths[i - 1] - config.CROSSFADE
         label = f"x{i}"
+        kind = config.TRANSITIONS[(i - 1) % len(config.TRANSITIONS)]
         steps.append(
-            f"[{current}][v{i}]xfade=transition=fade:duration={config.CROSSFADE}"
+            f"[{current}][v{i}]xfade=transition={kind}:duration={config.CROSSFADE}"
             f":offset={offset:.3f}[{label}]"
         )
+        used.append(kind)
         current = label
 
     # Un viñeteado muy leve y una entrada/salida a negro: es lo que separa
@@ -64,7 +68,9 @@ def render(scenes, audio: Path, dest: Path) -> Path:
         f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[vout]"
     )
 
-    log.info("Montando %d planos (%.1f min)", len(clips), total / 60)
+    reparto = ", ".join(f"{k}x{v}" for k, v in Counter(used).most_common())
+    log.info("Montando %d escenas (%.1f min); transiciones: %s",
+             len(clips), total / 60, reparto or "ninguna")
     ffmpeg(
         inputs
         + ["-i", str(audio)]

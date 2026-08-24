@@ -49,8 +49,9 @@ def _prepare_for_tts(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def mix(scenes, workdir: Path, music: Path | None = None) -> Path:
-    """Concatena las escenas con silencios, añade música y normaliza."""
+def mix(scenes, workdir: Path, music: Path | None = None,
+        sfx_bed: Path | None = None) -> Path:
+    """Concatena las escenas con silencios, añade música y efectos, y normaliza."""
     audio_dir = workdir / "audio"
     silence = audio_dir / "gap.mp3"
     if not silence.exists():
@@ -75,37 +76,61 @@ def mix(scenes, workdir: Path, music: Path | None = None) -> Path:
     ])
 
     final = audio_dir / "master.m4a"
+    duration = probe_duration(voice_track)
+
+    # La voz es la referencia. Todo lo demás se normaliza al mismo punto
+    # (-16 LUFS) y solo entonces se baja, para que MUSIC_DB y SFX_DB signifiquen
+    # decibelios por debajo de la voz y no números que dependen de cómo viniera
+    # masterizado cada material.
+    inputs: list[str] = ["-i", str(voice_track)]
+    steps = ["[0:a]loudnorm=I=-16:TP=-2:LRA=11,asplit=2[voz][llave]"]
+    layers = ["[voz]"]
+    idx = 1
+
     if music and music.exists():
-        duration = probe_duration(voice_track)
-        # Para que MUSIC_DB signifique algo, las dos pistas se llevan primero al
-        # mismo punto de referencia (-16 LUFS) y solo entonces se baja la música.
-        # Así -25 dB son veinticinco decibelios por debajo de la voz, y no un
-        # número que depende de cómo viniera masterizada la pista.
-        #
-        # Encima va un compresor con cadena lateral: cuando entra la voz, la
-        # música cede sola unos decibelios más y vuelve al soltar. Un nivel fijo
-        # suena bien en los silencios y estorba durante la narración.
-        ffmpeg([
-            "-i", str(voice_track),
-            "-stream_loop", "-1", "-i", str(music),
-            "-filter_complex",
-            f"[0:a]loudnorm=I=-16:TP=-2:LRA=11,asplit=2[voz][llave];"
-            f"[1:a]loudnorm=I=-16:TP=-2:LRA=11,volume={config.MUSIC_DB}dB,"
-            f"afade=t=in:st=0:d=3,afade=t=out:st={max(duration - 5, 0):.2f}:d=5[lecho];"
-            f"[lecho][llave]sidechaincompress="
-            f"threshold=0.03:ratio=4:attack=20:release=400:makeup=1[duck];"
-            f"[voz][duck]amix=inputs=2:duration=first:normalize=0[mezcla];"
-            f"[mezcla]loudnorm=I=-14:TP=-1.5:LRA=11[out]",
+        inputs += ["-stream_loop", "-1", "-i", str(music)]
+        # Compresor con cadena lateral: cuando entra la voz, la música cede
+        # sola unos decibelios y vuelve al soltar. Un nivel fijo suena bien en
+        # los silencios y estorba durante la narración.
+        steps.append(
+            f"[{idx}:a]loudnorm=I=-16:TP=-2:LRA=11,volume={config.MUSIC_DB}dB,"
+            f"afade=t=in:st=0:d=3,afade=t=out:st={max(duration - 5, 0):.2f}:d=5[lecho]"
+        )
+        steps.append(
+            "[lecho][llave]sidechaincompress="
+            "threshold=0.03:ratio=4:attack=20:release=400:makeup=1[duck]"
+        )
+        layers.append("[duck]")
+        idx += 1
+
+    if sfx_bed and sfx_bed.exists():
+        # Los efectos NO se comprimen contra la voz: su gracia es justamente
+        # que peguen en el corte, donde la narración hace una pausa.
+        inputs += ["-i", str(sfx_bed)]
+        steps.append(f"[{idx}:a]aformat=sample_rates=44100:channel_layouts=stereo[efectos]")
+        layers.append("[efectos]")
+        idx += 1
+
+    steps.append(
+        f"{''.join(layers)}amix=inputs={len(layers)}:duration=first:normalize=0[mezcla]"
+    )
+    steps.append("[mezcla]loudnorm=I=-14:TP=-1.5:LRA=11[out]")
+
+    ffmpeg(
+        inputs
+        + [
+            "-filter_complex", ";".join(steps),
             "-map", "[out]", "-t", f"{duration:.3f}",
             "-c:a", "aac", "-b:a", "192k", "-ar", "44100", str(final),
-        ])
-        log.info("Mezcla con música a %.0f dB bajo la voz", config.MUSIC_DB)
-    else:
-        ffmpeg([
-            "-i", str(voice_track),
-            "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-            "-c:a", "aac", "-b:a", "192k", "-ar", "44100", str(final),
-        ])
+        ]
+    )
+
+    capas = []
+    if music and music.exists():
+        capas.append(f"música {config.MUSIC_DB:.0f} dB")
+    if sfx_bed and sfx_bed.exists():
+        capas.append(f"efectos {config.SFX_DB:.0f} dB")
+    log.info("Mezcla: voz%s", " + " + " + ".join(capas) if capas else " sola")
 
     log.info("Audio maestro: %.1f min", probe_duration(final) / 60)
     return final
