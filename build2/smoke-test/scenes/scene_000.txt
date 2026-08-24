@@ -1,8 +1,0 @@
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_00.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_01.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_02.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_03.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_04.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_05.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_06.mp4'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/shots/000_07.mp4'

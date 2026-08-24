@@ -1,7 +1,0 @@
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/scene_000.mp3'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/gap.mp3'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/scene_001.mp3'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/gap.mp3'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/scene_002.mp3'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/gap.mp3'
-file 'C:/Users/aleja/Desktop/ÉTER/build2/smoke-test/audio/scene_003.mp3'
