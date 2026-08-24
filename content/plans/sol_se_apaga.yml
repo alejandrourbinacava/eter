@@ -87,11 +87,11 @@ scenes:
     emphasis: "Una glaciación no gradual sino instantánea"
   11:
     query: photosynthesis leaves
-    generic: [green leaves sunlight macro, forest canopy from below, plant leaves backlit, algae in water]
+    generic: [forest canopy from below, sunlit wheat field, green algae in water, sunlight through leaves]
     emphasis: Sería el fin de la fotosíntesis.
   12:
     query: dying plants drought
-    generic: [wilting plant timelapse, dead forest canopy, dry cracked earth plants, bare branches winter]
+    generic: [dead forest canopy, dry cracked earth, bare branches winter sky, frozen field dawn]
     emphasis: Sin luz solar, las plantas mueren.
   13:
     query: empty warehouse storage

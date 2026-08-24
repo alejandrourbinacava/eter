@@ -173,6 +173,8 @@ _REJECT_WORDS = {
     "restaurant", "shop", "market", "beach", "boat", "ship", "sailing", "yacht",
     "lighthouse", "forest", "tree", "flower", "garden", "farm", "sport",
     "phone", "laptop", "computer", "screen", "keyboard", "money", "gsm",
+    "houseplant", "pot", "potted", "vase", "indoor", "studio", "desk", "table",
+    "monstera", "bouquet", "decor", "interior",
     # Estética «tecnológica» que los bancos devuelven en cuanto pides algo
     # abstracto: lluvia de código verde, interfaces, circuitos. Es lo que se
     # coló pidiendo «particles» y «energy».
@@ -258,7 +260,15 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
 
 _SVS_API = "https://svs.gsfc.nasa.gov/api"
 # Solo CGI científico. Ver la explicación en _svs().
-_SVS_TYPES = {"Visualization", "Animation", "B-Roll"}
+# SOLO «Animation». Medido sobre siete búsquedas reales: de 227 resultados solo
+# 7 son Animation, pero son los únicos limpios de verdad —«Red Giant Sun»,
+# «Supernova explosion animation», «Cosmic Caverns in the Cat's Paw Nebula»—.
+# «Visualization» es mayoritariamente producto de datos con leyenda y fecha
+# quemadas, y el filtro por título solo caza una parte: seguían colándose un
+# mapamundi con puntos y un diagrama orbital rotulado. El SVS deja de ser fuente
+# de volumen (los bancos aportan más de 190 clips por vídeo) y pasa a ser fuente
+# de precisión para lo que solo existe en el archivo científico.
+_SVS_TYPES = {"Animation"}
 
 # El grueso de lo que el SVS etiqueta como «Visualization» son productos de
 # DATOS, no metraje: «ICESat-2 Land Ice Height Change (2020-2025)», «GRACE and
