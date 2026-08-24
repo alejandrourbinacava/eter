@@ -99,6 +99,11 @@ SHOT_MAX = 6.0
 # uno, y rompe el ritmo del montaje.
 CLIPS_ONLY = os.getenv("ETER_CLIPS_ONLY", "1") not in ("0", "false", "no")
 
+# Si ningún archivo tiene lo que se está diciendo, se genera el plano. La
+# regla del canal es que en pantalla salga el sujeto del que habla la
+# narración; un campo de estrellas genérico no vale. Ver videogen.py.
+GENERATE_MISSING = os.getenv("ETER_GENERATE", "1") not in ("0", "false", "no")
+
 # Borrar los intermedios en cuanto dejan de hacer falta. Una producción de
 # veinte minutos ocupa 6,6 GB entre material descargado y planos sueltos, y un
 # runner de GitHub solo tiene unos 14 GB libres. En local interesa conservarlos

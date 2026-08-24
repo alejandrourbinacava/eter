@@ -43,137 +43,137 @@ tags:
 scenes:
   0:
     query: sun solar surface
-    generic: [sun close up surface, sun rising over horizon, sunlight through clouds, bright sun in sky]
+    generic: [sun close up surface, sun in deep space, sun corona plasma, bright star in space]
     emphasis: Es una constante.
   1:
     query: solar flare eruption
-    generic: [sun surface plasma, solar corona closeup, burning star surface, fire plasma texture]
+    generic: [solar flare eruption, sun surface plasma, star surface burning, sun corona closeup]
     emphasis: Como si alguien apagara un interruptor.
   2:
     query: sun earth distance
-    generic: [sun seen from space, sun and earth space, distant sun star, sun in dark space]
+    generic: [sun seen from space, earth and sun from space, sunlight in deep space, star shining in space]
     emphasis: Estás viendo el Sol como era hace ocho minutos.
   3:
-    query: night sky stars
-    generic: [blue sky with sun, night sky full of stars, starry sky timelapse, sky darkening dusk]
+    query: earth day night terminator
+    generic: [earth from space day night, starfield in deep space, earth terminator line, stars appearing in space]
     emphasis: En un segundo, habría luz.
   4:
     query: dying star space
-    generic: [fading star in space, dark empty space, dim distant star, black void stars]
+    generic: [dim star in deep space, fading star space, dark empty space stars, distant star in void]
     emphasis: Como mirar una fotografía de alguien que ya no está.
   5:
-    query: earth night lights
-    generic: [city lights at night, dark street lights, blackout dark city, dim artificial light]
+    query: earth night lights from space
+    generic: [earth city lights from space, earth at night from orbit, dark side of earth, earth night from iss]
     emphasis: Sería el pánico.
   6:
     query: communication satellite orbit
-    generic: [satellite orbiting earth, solar panels in space, satellite dish night, orbital debris space]
+    generic: [satellite orbiting earth, satellite solar panels space, satellite above earth, space debris in orbit]
     emphasis: "sería solo el primer capítulo"
   7:
     query: earth ocean from space
-    generic: [ocean waves aerial, warm ocean surface, earth atmosphere limb, sea horizon dusk]
+    generic: [earth ocean from orbit, blue planet from space, earth atmosphere limb, earth clouds from space]
     emphasis: El frío empezaría casi de inmediato.
   8:
-    query: frozen river ice
-    generic: [river freezing ice, frozen field crops, ice forming water, winter frozen landscape]
+    query: frozen planet surface
+    generic: [frozen planet from space, ice planet surface, icy world in space, frozen moon surface]
     emphasis: Pero el proceso sería implacable e irreversible.
   9:
-    query: sea ice arctic
-    generic: [ocean ice forming, arctic sea ice aerial, frozen ocean surface, ice sheet cracks]
+    query: ice planet from space
+    generic: [frozen planet in space, ice covered planet, white planet in space, polar ice from orbit]
     emphasis: Los océanos empezarían a congelarse desde la superficie hacia abajo.
   10:
-    query: ice sheet glacier
-    generic: [vast glacier aerial, thick ice sheet, frozen wasteland wide, deep blue glacier ice]
+    query: ice moon surface
+    generic: [icy moon surface space, frozen world close up, ice planet slow rotation, glacial planet surface]
     emphasis: "Una glaciación no gradual sino instantánea"
   11:
-    query: photosynthesis leaves
-    generic: [forest canopy from below, sunlit wheat field, green algae in water, sunlight through leaves]
+    query: earth green from space
+    generic: [earth from space green, blue planet rotating space, earth surface from orbit, living planet from space]
     emphasis: Sería el fin de la fotosíntesis.
   12:
-    query: dying plants drought
-    generic: [dead forest canopy, dry cracked earth, bare branches winter sky, frozen field dawn]
+    query: dying planet surface
+    generic: [barren planet surface, dead world in space, grey planet close up, lifeless planet space]
     emphasis: Sin luz solar, las plantas mueren.
   13:
-    query: empty warehouse storage
-    generic: [dark greenhouse artificial light, empty storage shelves, indoor farming lights, frozen field night]
+    query: space station interior
+    generic: [space station in orbit, spacecraft interior window, station above earth, module in space]
     emphasis: Pero los inventarios de alimentos almacenados tienen un límite.
   14:
-    query: nuclear reactor cooling
-    generic: [nuclear power plant night, geothermal steam vents, industrial cooling towers, glowing reactor core]
+    query: nuclear fusion energy space
+    generic: [glowing energy core space, plasma reactor glow, star core energy, hot glowing sphere space]
     emphasis: "en un mundo sin estrella"
   15:
     query: earth magnetic field
-    generic: [aurora borealis from space, molten metal flowing, glowing lava flow, aurora over horizon]
+    generic: [aurora from space station, earth aurora from orbit, magnetic field around planet, aurora over earth curve]
     emphasis: El campo magnético terrestre.
   16:
     query: solar wind magnetosphere
-    generic: [aurora over earth night, solar wind plasma, sun corona streaming, aurora curtain sky]
+    generic: [solar wind particles space, aurora over earth night, sun plasma stream, charged particles around planet]
     emphasis: Pero hay una interacción que sí desaparecería inmediatamente.
   17:
     query: coronal mass ejection
-    generic: [solar eruption plasma, power grid night, electrical storm sky, sun flare closeup]
+    generic: [coronal mass ejection sun, solar eruption plasma, sun flare closeup, star ejecting plasma]
     emphasis: "Pero ese detalle apenas importa"
   18:
-    query: deep ocean water
-    generic: [deep dark ocean water, underwater light rays, ocean depth abyss, cold sea surface]
+    query: ocean world under ice
+    generic: [frozen ocean planet, ice world from space, dark ocean planet, water world in space]
     emphasis: "algo seguiría funcionando exactamente igual que antes"
   19:
     query: hydrothermal vent ocean floor
-    generic: [underwater hydrothermal vent, black smoker vent, deep sea floor dark, volcanic vent underwater]
+    generic: [hydrothermal vent underwater, deep sea vent black smoker, volcanic vent underwater, ocean floor dark vent]
     emphasis: No dependen del Sol para nada.
   20:
-    query: ice covered ocean
-    generic: [ice over dark water, underwater under ice, frozen ocean from below, blue ice cave water]
+    query: ice covered ocean moon
+    generic: [ice moon cracked surface, frozen ocean world space, icy moon in orbit, ice crust from space]
     emphasis: La vida no desaparecería de la Tierra si el Sol se apagara.
   21:
-    query: primordial earth ocean
-    generic: [bubbles rising dark water, mineral formations underwater, dark ocean floor, warm water plume]
+    query: primordial earth from space
+    generic: [young planet forming, volcanic planet from space, early earth from orbit, hot planet surface space]
     emphasis: La vida empezando de nuevo, desde abajo.
   22:
-    query: nuclear power plant
-    generic: [nuclear plant at night, industrial steam night, cooling tower vapour, warm light in snow]
+    query: mars colony habitat
+    generic: [habitat dome on planet, base on planet surface, colony on alien world, structure on mars surface]
     emphasis: ¿Podría sobrevivir la humanidad?
   23:
-    query: iceland geothermal
-    generic: [geothermal steam field, volcanic hot spring, greenhouse artificial light, snow covered village night]
+    query: geothermal planet surface
+    generic: [volcanic vents on planet, steam on planet surface, geothermal alien landscape, hot springs from above]
     emphasis: Pero sobrevivir no significa prosperar.
   24:
-    query: frozen city abandoned
-    generic: [abandoned frozen building, snow covered ruins, dark ice landscape, dim light in darkness]
+    query: frozen planet dark
+    generic: [dark frozen planet space, ice world no star, cold planet in darkness, abandoned world in space]
     emphasis: "el final sería inevitable"
   25:
-    query: gravity spacetime curvature
-    generic: [planet orbiting star, moon circling planet, star with orbiting planet, dark planet slow spin]
+    query: planet orbiting star
+    generic: [planet orbiting a star, moon circling planet, orbital motion in space, planet in slow orbit]
     emphasis: La gravedad del Sol no desaparecería.
   26:
     query: rogue planet interstellar
-    generic: [lone planet in dark space, planet drifting away, dark world no star, planet leaving orbit]
+    generic: [rogue planet in dark space, lone planet no star, planet drifting in space, dark world in deep space]
     emphasis: "Sería un planeta errante"
   27:
-    query: solar system planets orbit
-    generic: [planets in a row space, planet drifting apart, solar system animation, planets scattering dark]
+    query: solar system planets
+    generic: [planets aligned in space, solar system from above, planets in deep space, planets drifting apart]
     emphasis: "dejaría de existir ocho minutos después"
   28:
     query: red giant star
-    generic: [expanding star space, star aging animation, orange giant star, stellar evolution abstract]
+    generic: [red giant star space, expanding star in space, orange giant star, star swelling in space]
     emphasis: Eso es físicamente imposible.
   29:
     query: star formation nebula
-    generic: [gas cloud collapsing, nebula forming star, protostar dust cloud, cosmic gas swirling]
+    generic: [nebula forming stars, gas cloud collapsing space, protostar in nebula, cosmic dust cloud]
     emphasis: "Esa estrella lleva ardiendo desde entonces"
   30:
-    query: earth habitable zone
-    generic: [earth from deep space, blue planet rotating, ocean evaporating heat, sun over earth limb]
+    query: earth from deep space
+    generic: [earth from deep space, blue planet rotating, earth alone in space, pale blue dot]
     emphasis: Estamos dentro de esa ventana ahora mismo.
   31:
     query: sun photosphere closeup
-    generic: [sunlight on skin macro, warm light through window, sun rays atmosphere, golden light particles]
+    generic: [sun surface granulation, sun close up plasma, star surface detail, sun corona in space]
     emphasis: Que el Sol no es un decorado.
   32:
-    query: sunset horizon earth
-    generic: [person watching sky silhouette, sunset over horizon, warm sunlight evening, sky at dusk]
+    query: sunrise from orbit
+    generic: [sunrise seen from orbit, sun over earth limb, sunrise from space station, sun rising over planet]
     emphasis: Mira el cielo.
   33:
-    query: sunrise from space
-    generic: [sunrise over earth curve, first light horizon, warm sun rising, bright star in space]
+    query: sun over earth horizon
+    generic: [sun over earth curve, first light from orbit, sun rising in space, star over planet horizon]
     emphasis: Todavía.

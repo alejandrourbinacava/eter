@@ -143,6 +143,9 @@ _SPACE_WORDS = {
     "supernova", "blackhole", "eclipse", "constellation", "interstellar",
     "earth", "mars", "jupiter", "saturn", "venus", "mercury", "neptune", "uranus",
     "pluto", "deepspace", "crater", "plasma",
+    "planets", "moons", "world", "worlds", "alien", "extraterrestrial",
+    "orbiting", "corona", "coronal", "photosphere", "granulation", "sunrise",
+    "protostar", "giant", "dwarf", "quasar", "pulsar", "accretion", "horizon",
 }
 
 # Texturas y fenómenos terrestres que sirven de análogo. Un plano de hielo
@@ -626,7 +629,20 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
             log.debug("  fuente <- nasa-video '%s'", variant)
             return dest, False
 
-    # 5. Imagen fija de archivo, solo como relleno y con el sujeto concreto:
+    # 5. Generarlo. La regla del canal es que en pantalla salga aquello de lo
+    #    que habla la narración, así que antes de rendirse se fabrica el plano.
+    if config.GENERATE_MISSING:
+        from . import videogen
+
+        dest = raw_dir / f"ia_{counter:03d}.mp4"
+        sujeto = generic or query
+        got = videogen.clip(sujeto, dest, seconds=10.0, seed=counter)
+        if got and got.exists() and _has_video_stream(got):
+            stats["generado"] += 1
+            log.info("  fuente <- IA '%s'", sujeto)
+            return got, False
+
+    # 6. Imagen fija de archivo, solo como relleno y con el sujeto concreto:
     #    para un objeto con nombre propio suele ser lo único que existe.
     if config.CLIPS_ONLY:
         return None
