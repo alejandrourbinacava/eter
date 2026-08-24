@@ -82,23 +82,61 @@ que el canal tiene memoria aunque cada ejecución arranque en un runner limpio.
 
 ## De dónde sale la imagen
 
-Cascada, de mejor a peor, en `pipeline/visuals.py`:
+La base son **clips de vídeo**, nunca imágenes fijas, y ningún plano pasa de
+seis segundos. Un vídeo de veinte minutos son 272 planos. Cada uno lleva dos
+búsquedas y se enruta según cuál aplique:
+
+**Específico** — un objeto con nombre propio: Encélado, la Europa Clipper.
+Va a los archivos científicos, los únicos que tienen la cosa concreta.
+
+**Genérico** — lo que se ve, sin nombrarlo: «cracked ice texture», «accretion
+disk». Va a los bancos de stock.
+
+Nunca al revés. Mandar un nombre propio a un banco es lo peor posible porque no
+devuelve cero: devuelve lo que más se le parece por letras. Medido con las
+claves reales, «great red spot» devuelve un pájaro carpintero y «kinman dwarf»
+un hámster.
+
+La cascada, de mejor a peor:
 
 1. **`library/`** — tus propios clips. Prioridad absoluta. Ver
    [library/README.md](library/README.md).
-2. **Pexels** y **Pixabay** — vídeo de stock, licencia libre comercial.
-3. **Archivo fotográfico de la NASA** — Hubble, JWST, Cassini, JPL. Se convierte
-   en plano con movimiento lento (cuatro trayectorias que se alternan).
-4. **Vídeo de la NASA** — red de seguridad, con filtro estricto.
-5. **Procedural** — campo de estrellas. El render nunca se cae por falta de
-   material.
+2. **Pexels** y **Pixabay** — el grueso del material. Unos 190 clips por vídeo.
+3. **NASA SVS**, solo lo etiquetado `Animation`. Fuente de precisión, no de
+   volumen.
+4. **Vídeo general de la NASA** — red de seguridad.
+5. **Procedural** — campo de estrellas. El render nunca se cae.
 
-Dos filtros hacen casi todo el trabajo de calidad. Uno descarta por metadatos
-las piezas de comunicación del archivo (ruedas de prensa, cabeceras, salas de
-control). Otro, `_looks_like_space()`, mira el histograma y descarta láminas
-científicas y esquemas: una foto astronómica real es casi toda negra, una figura
-con rótulos tiene fondo claro. Sin ese segundo filtro se colaban láminas con
-texto quemado, que es lo que delata al instante un montaje automático.
+Con `CLIPS_ONLY` activado (por defecto) el archivo fotográfico no entra: una
+imagen fija con movimiento de cámara se distingue de un clip en cuanto se ve al
+lado de uno.
+
+### Los filtros, y por qué son los que son
+
+Cada uno existe porque algo se coló en una producción real.
+
+**`_is_space_clip`** cruza la descripción del clip contra tres listas: espacio,
+texturas terrestres que sirven de análogo, y exclusiones. Las exclusiones se
+levantan para lo que pide la propia búsqueda: un bosque no pinta nada en un
+documental espacial, pero si el guion habla del fin de la fotosíntesis y pides
+«forest canopy», el bosque es justo lo que hace falta.
+
+**`_svs` restringido a `Animation`.** De 227 resultados del SVS en siete
+búsquedas reales, solo 7 son de ese tipo, y son los únicos limpios. Lo
+etiquetado `Visualization` es mayoritariamente producto de datos —«Greenland
+Ice Mass Loss 2002-2025», «Map of the Eclipse»— con leyenda y fecha quemadas
+por definición.
+
+**`inspect_media`** muestrea un fotograma cada tres segundos y marca los tramos
+utilizables, porque una misma pieza puede tener cuarenta segundos de imagen
+buena y quince de gráficas. Ojo con su límite, que está medido: **no detecta
+rótulos pequeños y grises**. Puntúa cero en ellos incluso analizando a 640×360,
+mientras que fotogramas limpios puntúan hasta 10. Para eso sirve el filtro por
+título del SVS, no este.
+
+**Tope de reutilización.** Ninguna fuente puede cubrir más del 22 % de los
+planos. Sin él, en cuanto se agotan las fuentes de una búsqueda el primer clip
+disponible llena medio vídeo.
 
 ### Sobre generar clips con IA
 
@@ -109,32 +147,41 @@ condiciones. Genera los clips a mano cuando te apetezca, déjalos en `library/`
 con nombres descriptivos en inglés, y el pipeline los usará antes que cualquier
 otra fuente.
 
-La generación de imagen por API de ai33 está implementada (`ai33.generate_image`)
-pero **desactivada**: a fecha de 24/08/2026 las tareas terminan con `status:
-done`, cobran los créditos y devuelven `result_images` vacío en los tres modelos
-probados. El endpoint de vídeo `/veo3/task/generate-video` existe en la web pero
-responde 401 a las claves de API. Si ai33 lo arregla, se activa poniendo
-`USE_AI_IMAGES = True` en `pipeline/visuals.py`.
+La generación por API de ai33 está implementada y **desactivada**: sus tareas de
+imagen terminan con `status: done`, cobran los créditos y devuelven
+`result_images` vacío; comprobado con tres modelos y de nuevo dos horas después.
+El endpoint de vídeo responde 401 a las claves de API. Para la miniatura hay un
+adaptador de OpenAI en `pipeline/imagegen.py`, sin verificar por no tener clave.
 
 ## Estructura
 
 ```
 pipeline/
-  config.py      constantes y secretos
-  topics.py      cola de temas, historial, reabastecimiento
-  script_gen.py  guion y plan de producción
-  voice.py       locución por escena, mezcla, subtítulos
-  visuals.py     cascada de material y conversión a plano
-  assemble.py    montaje con fundidos encadenados
-  thumbnail.py   plantilla de miniatura del canal
-  youtube.py     subida
-  run.py         orquestador
+  config.py        constantes y secretos
+  topics.py        cola de temas, historial, reabastecimiento
+  script_gen.py    guion y plan de producción
+  voice.py         locución por escena, mezcla, subtítulos
+  visuals.py       búsqueda y descarga del material
+  inspect_media.py control de calidad: qué tramos de un clip valen
+  shots.py         troceado en planos de 3-6 s y ritmo de montaje
+  sfx.py           efectos de transición y dónde caen
+  music.py         lecho musical
+  assemble.py      montaje con fundidos encadenados
+  thumbnail.py     plantilla de miniatura del canal
+  imagegen.py      imagen de miniatura por IA (sin verificar)
+  youtube.py       subida
+  run.py           orquestador
+scripts/
+  from_script.py   producir desde un guion tuyo en Markdown
+  smoke_test.py    prueba de humo de 2 min, solo necesita AI33_API_KEY
+  get_youtube_token.py
 brand/
-  voice_guide.md      el contrato de voz
+  voice_guide.md       el contrato de voz
   reference_script.txt guion real de referencia
-  music/              lechos musicales opcionales (los pones tú)
+  music/               lechos musicales opcionales
 content/
-  topics.yml     cola de temas
+  topics.yml     cola de 30 temas
+  plans/         planes visuales de guiones escritos a mano
   published.json historial
 library/         tus propios clips
 ```
