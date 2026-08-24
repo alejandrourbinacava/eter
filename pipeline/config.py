@@ -104,6 +104,11 @@ CLIPS_ONLY = os.getenv("ETER_CLIPS_ONLY", "1") not in ("0", "false", "no")
 # narración; un campo de estrellas genérico no vale. Ver videogen.py.
 GENERATE_MISSING = os.getenv("ETER_GENERATE", "1") not in ("0", "false", "no")
 
+# Tope de planos generados por vídeo. Cada uno tarda entre veinte y cuarenta
+# segundos, así que sin límite un vídeo largo podría pasarse una hora
+# generando. Pasado el tope se recurre al banco general y queda avisado.
+MAX_GENERATED = int(os.getenv("ETER_MAX_GENERATED", "60"))
+
 # Borrar los intermedios en cuanto dejan de hacer falta. Una producción de
 # veinte minutos ocupa 6,6 GB entre material descargado y planos sueltos, y un
 # runner de GitHub solo tiene unos 14 GB libres. En local interesa conservarlos

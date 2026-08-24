@@ -196,7 +196,25 @@ class ClipBank:
                 if served:
                     return served
 
-        # 3. Otra vuelta sobre las fuentes DE ESTA BÚSQUEDA antes que tocar las
+        # 3. Se han agotado los huecos de esta búsqueda: pedir MÁS material
+        #    suyo, sin tope. Aquí es donde entra la generación por IA, porque
+        #    `fetch` la lleva al final de su cascada. Antes esto solo se
+        #    intentaba mientras la búsqueda tuviera menos de SOURCES_PER_QUERY
+        #    fuentes, así que la IA no llegaba a ejecutarse nunca y el reparto
+        #    se iba directo al banco general: 87 veces en un vídeo, y cero
+        #    planos generados.
+        if query not in self._exhausted:
+            got = self._fetch(query)
+            if got:
+                nueva = self._add(query, *got)
+                if nueva is not None:
+                    served = self._serve(nueva, want)
+                    if served:
+                        return served
+            else:
+                self._exhausted.add(query)
+
+        # 4. Otra vuelta sobre las fuentes DE ESTA BÚSQUEDA antes que tocar las
         #    de otra escena. Repetir un encuadre del tema correcto es mucho menos
         #    grave que enseñar algo que no tiene que ver con lo que se dice: si
         #    la narración habla del Sol, en pantalla tiene que haber Sol aunque
@@ -208,7 +226,7 @@ class ClipBank:
                 self._last = source
                 return source.path, start, source.is_image
 
-        # 4. Solo ahora, material de otras búsquedas.
+        # 5. Solo ahora, material de otras búsquedas.
         log.debug("  «%s» sin material propio, se recurre al banco general", query[:38])
         pool = [s for s in self._all if not s.is_image and s not in mine]
         for candidates in ([s for s in pool if s is not self._last], pool):
@@ -217,7 +235,7 @@ class ClipBank:
                 if served:
                     return served
 
-        # 5. Imágenes de relleno, si es que hay.
+        # 6. Imágenes de relleno, si es que hay.
         for source in sorted(
             (s for s in self._all if s.is_image), key=lambda s: self._budget.get(id(s), 0)
         ):
@@ -225,7 +243,7 @@ class ClipBank:
             if served:
                 return served
 
-        # 6. Última vuelta sobre lo que haya, ya sin tope.
+        # 7. Última vuelta sobre lo que haya, ya sin tope.
         for source in sorted(self._all, key=lambda s: (s.is_image, s.laps)):
             start = source.rewind(want)
             if start is not None:

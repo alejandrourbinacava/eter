@@ -631,7 +631,7 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
 
     # 5. Generarlo. La regla del canal es que en pantalla salga aquello de lo
     #    que habla la narración, así que antes de rendirse se fabrica el plano.
-    if config.GENERATE_MISSING:
+    if config.GENERATE_MISSING and stats["generado"] < config.MAX_GENERATED:
         from . import videogen
 
         dest = raw_dir / f"ia_{counter:03d}.mp4"
@@ -757,6 +757,12 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
              videos, images, fillers)
     log.info("Variedad: %d materiales distintos; el más repetido cubre %d de %d planos",
              used, worst, len(plan))
+    if stats["generado"] >= config.MAX_GENERATED:
+        log.warning(
+            "Se alcanzó el tope de %d planos generados. A partir de ahí se ha "
+            "tirado del banco general, así que puede haber planos fuera de tema.",
+            config.MAX_GENERATED,
+        )
 
     if images and not videos:
         log.warning(
