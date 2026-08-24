@@ -10,104 +10,166 @@
 #   angle       la anomalía concreta que sostiene el vídeo. Sin esto no hay vídeo.
 #   keyword     término de búsqueda visual principal (en inglés, para los archivos)
 #   thumb_word  palabra única de la miniatura, mayúsculas, 5-10 letras
+#
+# ORDEN: las seis series vienen INTERCALADAS a propósito, no en bloque. Cinco
+# vídeos seguidos con la fórmula «Por Qué Es Imposible» se leen como plantilla,
+# y ese es justo el perfil que vigila la política de contenido repetitivo de
+# YouTube. Alternando formato, dos vídeos consecutivos nunca comparten
+# estructura de título. Las series originales quedan anotadas al final de cada
+# entrada por si quieres reagruparlas.
 
 topics:
-  - title_hint: El Planeta Que Llueve Cristal A 7.000 Kilómetros Por Hora
-    angle: HD 189733b tiene una atmósfera de silicatos; los vientos supersónicos convierten la lluvia en cuchillas de vidrio.
-    keyword: exoplanet atmosphere
-    thumb_word: CRISTAL
+  # --- 1 ---------------------------------------------------------------
+  - title_hint: Por Qué Es Imposible Viajar A Una Estrella De Neutrones
+    angle: Concentra más masa que el Sol en una esfera de 20 km; su gravedad superficial es 200.000 millones de veces la terrestre y la fuerza de marea desintegraría una nave miles de kilómetros antes de llegar.
+    keyword: neutron star
+    thumb_word: APLASTADO   # serie Imposible
 
-  - title_hint: La Estrella Que Desapareció y NO Sabemos Dónde Está
-    angle: En 2019 una supergigante de la galaxia de Kinman dejó de verse sin explosión previa; pudo colapsar directamente en agujero negro.
-    keyword: supergiant star
-    thumb_word: DESAPARECIÓ
-
-  - title_hint: Por Qué El Núcleo De La Tierra Se Está Frenando
-    angle: El núcleo interno rotaba más rápido que la superficie y desde 2009 se ha invertido; nadie sabe qué implica a largo plazo.
-    keyword: earth core
-    thumb_word: FRENANDO
-
-  - title_hint: La Nube De Oort, El Límite Que Ninguna Sonda Cruzará
-    angle: Voyager 1 tardará 300 años en llegar a su borde interior y 30.000 en atravesarla; el sistema solar es mil veces mayor de lo que enseñan.
-    keyword: oort cloud comet
-    thumb_word: LÍMITE
-
-  - title_hint: El Océano De Europa Tiene Más Agua Que Toda La Tierra
-    angle: Bajo 15-25 km de hielo hay un océano salado de 100 km de profundidad, con el doble de agua líquida que el planeta entero.
-    keyword: europa jupiter moon
-    thumb_word: OCÉANO
-
-  - title_hint: ¿Qué Pasa Si Dos Agujeros Negros Chocan Cerca De La Tierra?
-    angle: La fusión libera más energía en un segundo que todas las estrellas del universo observable juntas, pero en forma de ondas gravitacionales.
-    keyword: black hole merger
-    thumb_word: CHOQUE
-
-  - title_hint: La Mancha Roja De Júpiter Se Está Muriendo
-    angle: La tormenta lleva al menos 350 años activa y en un siglo ha encogido a la mitad; no hay modelo que explique ni su duración ni su final.
-    keyword: jupiter great red spot
-    thumb_word: MURIENDO
-
-  - title_hint: El Lugar Más Frío Del Universo No Está En El Espacio
-    angle: La nebulosa Boomerang está a 1 K, más fría que el fondo cósmico; pero el récord absoluto se ha batido en un laboratorio terrestre.
-    keyword: boomerang nebula
-    thumb_word: FRÍO
-
-  - title_hint: Por Qué Venus Es El Planeta Que Más Se Parecía A La Tierra
-    angle: Pudo tener océanos durante 2.000 millones de años; algo desencadenó un efecto invernadero desbocado y nadie sabe qué.
-    keyword: venus surface
-    thumb_word: GEMELO
-
-  - title_hint: La Señal Wow, 47 Años Después Seguimos Sin Explicarla
-    angle: 72 segundos de banda estrecha en 1420 MHz que nunca se repitió; todas las explicaciones naturales propuestas han sido descartadas o son parciales.
-    keyword: radio telescope array
-    thumb_word: SEÑAL
-
-  - title_hint: El Viaje De La Luz Que Tarda Un Millón De Años En Salir Del Sol
-    angle: Un fotón generado en el núcleo tarda entre 10.000 y un millón de años en alcanzar la superficie, y 8 minutos en llegar a tus ojos.
+  - title_hint: Qué Pasaría Si El Sol Se Apagara De Repente
+    angle: Tardaríamos 8 minutos y 20 segundos en enterarnos; en una semana la temperatura media caería por debajo de los 70 grados bajo cero y la única vida que seguiría siendo viable estaría en las fuentes hidrotermales del fondo oceánico.
     keyword: sun solar surface
-    thumb_word: ATRAPADA
+    thumb_word: OSCURIDAD   # serie Qué Pasaría Si
 
-  - title_hint: Titán Es El Único Sitio Del Sistema Solar Con Ríos Además De La Tierra
-    angle: Ríos, lagos y lluvia de metano líquido a -179 °C, con un ciclo hidrológico completo que no usa agua.
-    keyword: titan saturn moon
-    thumb_word: RÍOS
+  - title_hint: Lo Que Le Pasaría A Tu Cuerpo Si Cayeras En Un Agujero Negro
+    angle: En uno de masa estelar la diferencia de gravedad entre tu cabeza y tus pies te estiraría hasta romperte; en uno supermasivo cruzarías el horizonte sin notar absolutamente nada.
+    keyword: black hole simulation
+    thumb_word: ESTIRADO   # serie Tu Cuerpo
 
-  - title_hint: Lo Que Le Pasaría A Tu Cuerpo En El Vacío Del Espacio
-    angle: No explotas ni te congelas al instante; pierdes la consciencia en 15 segundos por la ebullición de los fluidos a presión cero.
+  - title_hint: Lo Que El Telescopio James Webb Encontró Y Nadie Esperaba
+    angle: Galaxias masivas y ya maduras apenas 300 millones de años después del Big Bang, demasiado formadas para el tiempo disponible según los modelos vigentes.
+    keyword: james webb telescope
+    thumb_word: IMPOSIBLE   # serie Nadie Te Cuenta
+
+  - title_hint: Qué Había Antes Del Big Bang Según La Física
+    angle: Si el tiempo empezó ahí, la pregunta no tiene sentido gramatical; pero los modelos de rebote y de inflación eterna sí permiten un antes, y ninguno es descartable con los datos actuales.
+    keyword: big bang cosmic
+    thumb_word: ANTES   # serie Gran Pregunta
+
+  - title_hint: El Lugar Más Peligroso Del Sistema Solar No Es El Sol
+    angle: Los cinturones de radiación de Júpiter entregan en la órbita de Ío unos 3.600 rem al día, una dosis mortal para un ser humano en cuestión de horas.
+    keyword: jupiter radiation io
+    thumb_word: LETAL   # serie El Lugar Más
+
+  # --- 2 ---------------------------------------------------------------
+  - title_hint: Por Qué Es Imposible Escapar De Un Agujero Negro Una Vez Dentro
+    angle: "Dentro del horizonte de sucesos no hace falta ir más rápido: todas las trayectorias futuras posibles apuntan a la singularidad, igual que aquí todas apuntan al futuro. Escapar exigiría viajar hacia atrás en el tiempo."
+    keyword: black hole event horizon
+    thumb_word: ATRAPADO   # serie Imposible
+
+  - title_hint: Qué Pasaría Si Júpiter Desapareciera Mañana
+    angle: "Se le llama el escudo de la Tierra, pero las simulaciones no se ponen de acuerdo: su gravedad desvía cometas hacia fuera tanto como los lanza hacia dentro, y sin él podríamos recibir menos impactos, no más."
+    keyword: jupiter planet
+    thumb_word: ESCUDO   # serie Qué Pasaría Si
+
+  - title_hint: Lo Que Le Pasaría A Tu Cuerpo Si Vivieras En Marte
+    angle: Un 38 % de gravedad, sin campo magnético que te proteja y con una dosis de radiación decenas de veces la terrestre; la pérdida de masa ósea que provoca no se recupera del todo al volver.
+    keyword: mars surface rover
+    thumb_word: FRÁGIL   # serie Tu Cuerpo
+
+  - title_hint: La Misión Espacial Que Salió Terriblemente Mal Y Nadie Recuerda
+    angle: La Soyuz 11 regresó en perfecto estado en 1971 con sus tres tripulantes muertos por una válvula que se abrió sola; siguen siendo los únicos seres humanos fallecidos fuera de la atmósfera.
+    keyword: soyuz spacecraft capsule
+    thumb_word: OLVIDADA   # serie Nadie Te Cuenta
+
+  - title_hint: Por Qué El Silencio Del Universo Es Lo Más Aterrador Que Existe
+    angle: Más de 5.000 exoplanetas confirmados y ni una sola señal. Si el Gran Filtro que explica ese silencio no está detrás de nosotros, está delante.
+    keyword: radio telescope array
+    thumb_word: SILENCIO   # serie Gran Pregunta
+
+  - title_hint: La Tormenta Que Lleva 400 Años Sin Parar Y Nadie Puede Explicar
+    angle: La Gran Mancha Roja de Júpiter se observa de forma continua desde 1830 y probablemente sea la misma que vio Cassini en 1665; en el último siglo ha encogido a la mitad y no hay modelo que explique ni su duración ni su final.
+    keyword: jupiter great red spot
+    thumb_word: ETERNA   # serie El Lugar Más
+
+  # --- 3 ---------------------------------------------------------------
+  - title_hint: Por Qué Es Imposible Viajar Más Rápido Que La Luz
+    angle: La energía necesaria para acelerar masa hasta esa velocidad tiende a infinito. Y aunque existiera un atajo, permitiría enviar información a tu propio pasado y romper la causalidad.
+    keyword: light speed space
+    thumb_word: LÍMITE   # serie Imposible
+
+  - title_hint: Qué Pasaría Si Un Agujero Negro Entrara Al Sistema Solar
+    angle: No lo veríamos llegar. Lo detectaríamos por cómo se desordenan las órbitas de los planetas exteriores meses antes de que nada visible ocurriera.
+    keyword: black hole solar system
+    thumb_word: INTRUSO   # serie Qué Pasaría Si
+
+  - title_hint: Lo Que Le Pasaría A Tu Cuerpo Si Estuvieras En El Espacio Sin Traje
+    angle: "Minuto a minuto, y casi nada es como en las películas: los fluidos hierven a presión cero sin que explotes, el vapor te congela por evaporación y no te congelas por frío, porque el vacío no conduce calor."
     keyword: astronaut spacewalk
-    thumb_word: VACÍO
+    thumb_word: SEGUNDOS   # serie Tu Cuerpo
 
-  - title_hint: La Materia Oscura Es El 85 % Del Universo y No Sabemos Qué Es
-    angle: Se detecta solo por su gravedad; 40 años de experimentos directos no han encontrado ni una sola partícula.
-    keyword: galaxy cluster dark matter
-    thumb_word: INVISIBLE
+  - title_hint: Lo Que Los Astronautas Ven En El Espacio Y No Pueden Hablar
+    angle: "Destellos de luz con los ojos cerrados, descritos desde el Apolo 11: son rayos cósmicos atravesando el nervio óptico. No se pueden fotografiar ni compartir, solo describir."
+    keyword: astronaut iss window
+    thumb_word: DESTELLOS   # serie Nadie Te Cuenta
 
-  - title_hint: El Asteroide Que Vale Más Que La Economía Mundial
-    angle: 16 Psyche es probablemente el núcleo metálico expuesto de un protoplaneta destruido; su valor mineral no tiene sentido económico real.
-    keyword: asteroid psyche metal
-    thumb_word: METAL
+  - title_hint: Si El Universo Es Infinito Hay Otra Versión De Ti Ahora Mismo
+    angle: Con un número finito de configuraciones posibles de materia y un espacio infinito, toda configuración se repite. La estimación más citada sitúa tu copia más cercana a unos diez elevado a diez elevado a 115 metros.
+    keyword: infinite universe galaxies
+    thumb_word: IDÉNTICO   # serie Gran Pregunta
 
-  - title_hint: Por Qué La Luna Se Está Alejando De Nosotros
-    angle: 3,8 cm al año por transferencia de momento angular; en 600 millones de años no habrá más eclipses totales de Sol.
+  - title_hint: El Objeto Más Violento Jamás Detectado En El Universo
+    angle: El estallido de rayos gamma de octubre de 2022 liberó en unos segundos más energía que la que el Sol emitirá en toda su existencia, y saturó todos los detectores que lo apuntaban.
+    keyword: gamma ray burst
+    thumb_word: VIOLENTO   # serie El Objeto Más
+
+  # --- 4 ---------------------------------------------------------------
+  - title_hint: Por Qué Es Imposible Que El Universo Tenga Fin
+    angle: Las medidas de Planck dan una curvatura compatible con cero dentro de un margen mínimo. Un universo plano no tiene borde, y un borde exigiría un exterior que ninguna física describe.
+    keyword: cosmic microwave background
+    thumb_word: INFINITO   # serie Imposible
+
+  - title_hint: Qué Pasaría Si La Tierra Tuviera Dos Lunas
+    angle: "Mareas de una escala que reescribiría la evolución de toda la vida costera, y un sistema inestable: las dos lunas acabarían chocando o expulsándose la una a la otra."
     keyword: moon earth orbit
-    thumb_word: ALEJÁNDOSE
+    thumb_word: MAREAS   # serie Qué Pasaría Si
 
-  - title_hint: El Motor Que Podría Llevarnos A Otra Estrella
-    angle: Propulsión nuclear de pulso, velas láser y antimateria; los tres funcionan sobre el papel y los tres son inviables por razones distintas.
-    keyword: interstellar spacecraft
-    thumb_word: IMPOSIBLE
+  - title_hint: Lo Que Le Pasaría A Tu Cuerpo Si Nacieras En La Luna
+    angle: Un esqueleto y un corazón formados desde el embrión para un sexto de gravedad. El resultado no podría volver a poner un pie en la Tierra sin que su propio peso lo lesionara.
+    keyword: moon surface base
+    thumb_word: EXTRAÑO   # serie Tu Cuerpo
 
-  - title_hint: La Atmósfera De Marte Se La Llevó El Viento Solar
-    angle: Sin campo magnético global, Marte perdió su aire durante miles de millones de años; MAVEN midió la fuga en tiempo real.
-    keyword: mars atmosphere
-    thumb_word: ROBADA
+  - title_hint: El Mensaje Que La NASA Envió Al Espacio Y Ya No Puede Recuperar
+    angle: El mensaje de Arecibo salió en 1974 hacia el cúmulo M13 y tardará 25.000 años en llegar. Los discos de las Voyager ya están fuera de la heliosfera. Nada de eso admite una corrección.
+    keyword: voyager spacecraft
+    thumb_word: ENVIADO   # serie Nadie Te Cuenta
 
-  - title_hint: ¿Cuánto Duraría La Vida En La Tierra Sin El Campo Magnético?
-    angle: Las inversiones geomagnéticas ocurren cada 200.000-300.000 años y llevamos 780.000 sin una; el campo se ha debilitado un 9 % en 200 años.
-    keyword: earth magnetic field aurora
-    thumb_word: ESCUDO
+  - title_hint: Cuánto Tiempo Le Queda Realmente A La Humanidad Según La Ciencia
+    angle: "El Sol no tiene que convertirse en gigante roja para acabar con nosotros: su brillo creciente hará inhabitable la Tierra en unos mil millones de años, mucho antes de ese final."
+    keyword: earth from space
+    thumb_word: RELOJ   # serie Gran Pregunta
 
-  - title_hint: El Gran Atractor, Algo Tira De Nuestra Galaxia y No Podemos Verlo
-    angle: La Vía Láctea cae hacia un punto a 250 millones de años luz oculto tras el plano galáctico, a 600 km/s.
-    keyword: galaxy supercluster
-    thumb_word: ATRACTOR
+  - title_hint: El Sonido Más Grave Del Universo Y Lo Que Produce Escucharlo
+    angle: El agujero negro del cúmulo de Perseo genera ondas de presión en el gas intergaláctico que corresponden a un si bemol 57 octavas por debajo del do central, muy lejos de cualquier umbral audible.
+    keyword: perseus galaxy cluster
+    thumb_word: PROFUNDO   # serie El Objeto Más
+
+  # --- 5 ---------------------------------------------------------------
+  - title_hint: Por Qué Es Imposible Sobrevivir En El Espacio Sin Traje Ni Un Segundo
+    angle: "No es el frío ni la falta de aire: es la presión. Con cero presión exterior, el oxígeno de tu sangre se invierte y sale de los pulmones, y la consciencia se pierde en unos quince segundos."
+    keyword: vacuum space station
+    thumb_word: VACÍO   # serie Imposible
+
+  - title_hint: Qué Pasaría Si La Tierra Estuviera El Doble De Lejos Del Sol
+    angle: Recibiríamos una cuarta parte de la luz y quedaríamos fuera del borde exterior de la zona habitable, con una temperatura media en torno a los 50 grados bajo cero.
+    keyword: earth orbit sun
+    thumb_word: CONGELADA   # serie Qué Pasaría Si
+
+  - title_hint: Lo Que Le Pasaría A Tu Cuerpo Si Vivieras En Una Nave Espacial 10 Años
+    angle: Entre el 1 y el 2 % de masa ósea al mes, presión intracraneal que altera la visión de forma permanente, un microbioma que se empobrece y una dosis de radiación acumulada que ninguna agencia autorizaría.
+    keyword: space station interior
+    thumb_word: DESGASTE   # serie Tu Cuerpo
+
+  - title_hint: La Razón Por La Que La NASA Dejó De Ir A La Luna Y No Es La Que Crees
+    angle: "Apolo 18, 19 y 20 se cancelaron en 1970 con los cohetes ya construidos. No fue la tecnología ni el peligro: el objetivo político estaba cumplido y el presupuesto se desplomó."
+    keyword: apollo saturn rocket
+    thumb_word: ABANDONO   # serie Nadie Te Cuenta
+
+  - title_hint: Por Qué El Universo Parece Diseñado Para Que Existamos
+    angle: "Varias constantes fundamentales admiten un margen ínfimo: una variación de pocos puntos porcentuales en la fuerza nuclear fuerte y no existiría el carbono. La física describe el ajuste; no lo explica."
+    keyword: stellar nucleosynthesis
+    thumb_word: AJUSTADO   # serie Gran Pregunta
+
+  - title_hint: La Explosión Más Grande Del Universo Y Qué La Causó
+    angle: La erupción detectada en el cúmulo de Ofiuco excavó en el gas caliente una cavidad de más de un millón de años luz, la mayor liberación de energía conocida desde el Big Bang.
+    keyword: galaxy cluster xray
+    thumb_word: COLOSAL   # serie El Objeto Más
