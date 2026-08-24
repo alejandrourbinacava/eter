@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import random
 import re
 from pathlib import Path
@@ -689,6 +690,13 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         if not dest.exists():
             shots.concat_scene(paths, dest, scenes_dir / f"scene_{scene.index:03d}.txt")
         scene.clip_path = str(dest)
+
+    # Los originales ya no hacen falta: cada plano se ha recortado y
+    # recodificado. Son con diferencia lo que más pesa de la producción.
+    if config.PRUNE:
+        liberado = sum(f.stat().st_size for f in raw_dir.rglob("*") if f.is_file())
+        shutil.rmtree(raw_dir, ignore_errors=True)
+        log.info("Material original descartado: %.1f GB liberados", liberado / 1e9)
 
     videos, images = bank.stats
     used, worst = bank.diversity_report()

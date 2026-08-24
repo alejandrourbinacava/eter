@@ -472,4 +472,10 @@ def concat_scene(shot_paths: list[Path], dest: Path, listing: Path) -> Path:
             str(dest),
         ]
     )
+
+    # Los planos sueltos ya están dentro de la escena.
+    if config.PRUNE:
+        for path in shot_paths:
+            path.unlink(missing_ok=True)
+
     return dest

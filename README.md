@@ -146,6 +146,13 @@ encadena con `xfade` en el desplazamiento acumulado exacto. El corte de plano
 cae justo donde arranca la narración de su escena, y el fundido entra sobre la
 pausa entre escenas, nunca sobre una palabra.
 
+## Puesta en marcha en GitHub
+
+Está en [docs/despliegue.md](docs/despliegue.md): la cuenta de minutos, los
+secretos, la primera ejecución en seco y el espacio en disco. Léelo antes de
+activar el cron — la decisión de repositorio público o privado cambia la
+factura de unos 30 $ al mes a cero.
+
 ## El workflow
 
 `.github/workflows/daily.yml` se dispara a las 15:00 UTC. Instala ffmpeg,
@@ -156,8 +163,10 @@ días; el MP4 no, que ya está en YouTube.
 También se puede lanzar a mano desde la pestaña Actions, eligiendo visibilidad y
 duración. Para probar sin publicar, marca «Renderizar sin publicar».
 
-Un render de 14 minutos tarda unos 25-40 minutos de runner. En repositorio
-público los minutos son gratis; en privado consume del cupo mensual.
+Medido sobre la primera producción real: un vídeo de 20 minutos tardó 75 en un
+equipo de 16 núcleos. El runner tiene 4, así que cuenta con 2 horas y media o
+3. En repositorio público los minutos son gratis; en privado te pasarías del
+cupo hacia el día doce de cada mes.
 
 ## Coste y cuotas
 

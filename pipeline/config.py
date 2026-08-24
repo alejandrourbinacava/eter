@@ -99,6 +99,12 @@ SHOT_MAX = 6.0
 # uno, y rompe el ritmo del montaje.
 CLIPS_ONLY = os.getenv("ETER_CLIPS_ONLY", "1") not in ("0", "false", "no")
 
+# Borrar los intermedios en cuanto dejan de hacer falta. Una producción de
+# veinte minutos ocupa 6,6 GB entre material descargado y planos sueltos, y un
+# runner de GitHub solo tiene unos 14 GB libres. En local interesa conservarlos
+# para poder relanzar sin volver a descargar; en CI no hay segunda pasada.
+PRUNE = os.getenv("ETER_PRUNE", "1" if os.getenv("CI") else "0") not in ("0", "false", "no")
+
 # Patrón de duraciones que se recorre en bucle. Alternar largo y corto es lo
 # que da sensación de ritmo; una duración constante se percibe como plantilla.
 SHOT_RHYTHM = (5.5, 3.6, 4.8, 6.0, 3.2, 5.0, 4.2, 5.8, 3.8, 4.5)

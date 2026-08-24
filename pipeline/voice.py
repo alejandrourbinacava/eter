@@ -138,6 +138,13 @@ def mix(scenes, workdir: Path, music: Path | None = None,
         ]
     )
 
+    # voice.wav y sfx.wav son PCM sin comprimir: 211 MB cada uno en un vídeo de
+    # veinte minutos. Ya están dentro del máster.
+    if config.PRUNE:
+        for temporal in (voice_track, sfx_bed):
+            if temporal and Path(temporal).exists():
+                Path(temporal).unlink()
+
     capas = []
     if music and music.exists():
         capas.append(f"música {config.MUSIC_DB:.0f} dB")

@@ -31,7 +31,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # Un vídeo de 20 min tardó 75 en un equipo de 16 núcleos; el runner tiene 4.
+    # El techo de GitHub son 360 minutos y no se puede subir.
+    timeout-minutes: 340
 
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +42,13 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+
+      - name: Hacer sitio en el disco
+        run: |
+          # El runner viene con ~14 GB libres y una producción sin limpiar
+          # ocupa 6,7. Quitando las imágenes de Android y .NET se ganan 20 GB.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h / | tail -1
 
       - name: Instalar ffmpeg
         run: |
@@ -69,6 +78,10 @@ jobs:
           ETER_TARGET_MINUTES: ${{ inputs.minutes || '14' }}
         run: |
           python -m pipeline.run ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Espacio restante
+        if: always()
+        run: df -h / | tail -1
 
       - name: Guardar guion, miniatura y subtítulos
         if: always()
