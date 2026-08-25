@@ -778,6 +778,7 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
 
     autocrops: dict[str, str] = {}
     fillers = 0
+    frozen = 0
 
     for shot in plan:
         dest = shots_dir / f"{shot.scene_index:03d}_{shot.index:02d}.mp4"
@@ -798,11 +799,39 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
                 autocrops[key] = _autocrop(shot.source)
             crop = autocrops[key]
 
-        try:
-            shots.render_shot(shot, dest, crop)
-        except RuntimeError:
-            log.debug("  plano %s falló al procesar, se rellena", dest.stem)
-            shot.source = None
+        # Se intenta varias veces: si el plano sale congelado se pide otro
+        # trozo. Comprobar la fuente no basta, porque un clip puede moverse de
+        # media y aun así el trozo concreto que se corta estar parado. Esta es
+        # la única medida que mira lo que va a ver el espectador.
+        for intento in range(3):
+            try:
+                shots.render_shot(shot, dest, crop)
+            except RuntimeError:
+                log.debug("  plano %s falló al procesar", dest.stem)
+                shot.source = None
+                break
+
+            if shot.source is None:
+                break
+            movimiento = shots.shot_motion(dest)
+            if movimiento >= shots.MIN_SHOT_MOTION:
+                break
+            if intento == 2:
+                log.debug("  %s sigue quieto (%.1f) tras 3 intentos", dest.stem, movimiento)
+                break
+
+            log.debug("  %s congelado (%.1f), se prueba otro trozo", dest.stem, movimiento)
+            frozen += 1
+            otro = bank.segment(shot.query, shot.duration)
+            if not otro:
+                break
+            shot.source, shot.source_start, shot.is_image = otro
+            key = str(shot.source)
+            if key not in autocrops:
+                autocrops[key] = _autocrop(shot.source)
+            crop = autocrops[key]
+
+        if shot.source is None:
             shots.render_shot(shot, dest)
             fillers += 1
 
@@ -828,6 +857,8 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
              videos, images, fillers)
     log.info("Variedad: %d materiales distintos; el más repetido cubre %d de %d planos",
              used, worst, len(plan))
+    if frozen:
+        log.info("Planos rehechos por salir congelados: %d", frozen)
     if stats["generado"] >= config.MAX_GENERATED:
         log.warning(
             "Se alcanzó el tope de %d planos generados. A partir de ahí se ha "
