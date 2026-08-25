@@ -89,23 +89,28 @@ def _text_rows(pixels: list[int], width: int, height: int) -> int:
 def _flat_rows(pixels: list[int], width: int, height: int) -> int:
     """Filas con una racha larga de valor casi constante y que no es negro.
 
-    Es la firma de las gráficas sobre fondo oscuro, que el test de brillo no
-    detecta: barras de espectro, ejes, bordes de panel, tablas. La imagen
-    astronómica real tiene ruido y degradado, así que casi nunca produce
-    tramos planos largos fuera del fondo negro.
+    Es la firma de las gráficas sobre fondo oscuro: barras de espectro, ejes,
+    bordes de panel, tablas.
+
+    El margen tiene que ser MUY estrecho. Con una tolerancia de 4 niveles, un
+    degradado suave —la superficie del Sol, una nebulosa— se contaba como plano
+    y el filtro tiraba precisamente el material que busca el canal: clips con
+    diferencias de 58 entre fotogramas, o sea movimiento evidente, rechazados
+    por «gráfica». Una barra de gráfica es constante de verdad; un degradado
+    astronómico cambia un nivel cada pocos píxeles.
     """
     flat = 0
     for y in range(height):
         row = pixels[y * width:(y + 1) * width]
         best = run = 1
         for x in range(1, width):
-            if abs(row[x] - row[x - 1]) <= 4:
+            if abs(row[x] - row[x - 1]) <= 1:
                 run += 1
                 if run > best:
                     best = run
             else:
                 run = 1
-        if best > width * 0.45 and sum(row) / width > 40:
+        if best > width * 0.55 and sum(row) / width > 40:
             flat += 1
     return flat
 
@@ -130,9 +135,15 @@ def frame_is_clean(path: Path, strict: bool = True) -> bool:
 
     if strict and not _is_space_like(pixels):
         return False
-    # Umbrales medidos sobre material real del SVS: los fotogramas de gráficas
-    # dan entre 26 y 58; los de imagen astronómica, entre 0 y 2.
-    if _text_rows(pixels, 192, 108) >= 8:
+
+    # El detector de texto SOLO vale sobre fondo oscuro, que es donde se
+    # calibró: ahí una gráfica da entre 26 y 58 y la imagen astronómica entre 0
+    # y 2. Sobre material brillante y con textura —plasma, fuego, una
+    # superficie estelar— la misma prueba da entre 43 y 89 sin que haya una
+    # sola letra, porque cuenta como trazos las rachas claras de la propia
+    # textura. Aplicarlo ahí tiraba clips con movimiento evidente.
+    media = sum(pixels) / len(pixels)
+    if media < 90 and _text_rows(pixels, 192, 108) >= 8:
         return False
     if _flat_rows(pixels, 192, 108) >= 45:
         return False
@@ -169,11 +180,19 @@ def _difference(a: Path, b: Path) -> float:
     return sum(i * n for i, n in enumerate(hist)) / total
 
 
-# Por debajo de esto, dos fotogramas separados por SAMPLE_EVERY segundos son
-# prácticamente el mismo: el clip está congelado y en pantalla se lee como una
-# foto. Calibrado sobre los planos del primer vídeo largo, donde el 19 % daba
-# menos de 3 y cuatro daban exactamente 0.
-MIN_MOTION = 2.5
+# Dos umbrales, y la diferencia entre ellos importa.
+#
+# MIN_MOTION mide un tramo concreto: por debajo, esos tres segundos están
+# parados y no se usan.
+#
+# MIN_SOURCE_MOTION mide el clip ENTERO por su mediana, y es el que de verdad
+# hacía falta. Un clip puede moverse lo justo en cada tramo para superar la
+# primera prueba y aun así leerse como una foto durante todo el plano: medido
+# sobre 70 fuentes reales, las que dan mediana de 2,5 a 3,5 son exactamente las
+# que producían los planos congelados. Con el corte en 5 se descarta el 24 % de
+# las fuentes, que es la proporción de planos que salían quietos.
+MIN_MOTION = 2.0
+MIN_SOURCE_MOTION = 5.0
 
 
 def clean_windows(video: Path, duration: float, min_len: float,
@@ -204,15 +223,21 @@ def clean_windows(video: Path, duration: float, min_len: float,
 
         verdicts = [frame_is_clean(f, strict=strict) for f in frames]
 
-        # Y además tiene que MOVERSE. Un clip congelado es una imagen
-        # disfrazada, y el canal pidió clips. Cada veredicto se compara con el
-        # fotograma siguiente; si no cambia nada, ese tramo no vale.
-        for i in range(len(frames)):
-            if not verdicts[i]:
-                continue
-            vecino = frames[i + 1] if i + 1 < len(frames) else frames[i - 1]
-            if vecino is frames[i] or _difference(frames[i], vecino) < MIN_MOTION:
-                verdicts[i] = False
+        # Y además tiene que MOVERSE: un clip congelado es una imagen
+        # disfrazada, y el canal pidió clips.
+        difs = [_difference(frames[i], frames[i + 1]) for i in range(len(frames) - 1)]
+        if difs:
+            import statistics
+
+            central = statistics.median(difs)
+            if central < MIN_SOURCE_MOTION:
+                log.debug("  %s descartado por quieto (mediana %.1f)",
+                          video.name[:36], central)
+                return []
+            # Y dentro de un clip que sí se mueve, los tramos parados tampoco.
+            for i, d in enumerate(difs):
+                if d < MIN_MOTION:
+                    verdicts[i] = False
 
     # Cada veredicto cubre su bucket de SAMPLE_EVERY segundos.
     windows: list[list[float]] = []
