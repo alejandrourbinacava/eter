@@ -188,6 +188,13 @@ _REJECT_WORDS = {
     "panel", "panels", "photovoltaic", "turbine", "windmill", "powerplant",
     "roof", "village", "town", "road", "highway", "bridge", "mountain",
     "mountains", "hill", "hills", "meadow", "grass", "landscape", "valley",
+    # Papel y escritura. «star surface burning» trajo unas tarjetas con un
+    # poema manuscrito ardiendo a la luz de una vela: lo único que compartían
+    # era la palabra «burning».
+    "paper", "handwriting", "handwritten", "written", "writing", "note", "notes",
+    "letter", "letters", "book", "page", "pages", "poem", "poetry", "ink",
+    "pen", "pencil", "calligraphy", "parchment", "candle", "candles",
+    "fireplace", "campfire", "bonfire", "matches", "lighter",
     "matrix", "digital", "code", "coding", "binary", "hud", "interface",
     "circuit", "chip", "server", "hologram", "futuristic", "cyber", "tech",
     "technology", "network", "blockchain", "bitcoin", "dashboard", "ui",
@@ -206,9 +213,12 @@ _DESIGN_WORDS = {
 
 # Palabras demasiado genéricas para demostrar por sí solas que un clip trata de
 # lo que se está diciendo.
-_WEAK_WORDS = {"light", "dark", "deep", "closeup", "macro", "abstract", "slow",
-               "beautiful", "stunning", "amazing", "background", "aerial",
-               "view", "footage", "video", "shot", "scene", "time", "lapse"}
+# «burning» y «night» parecen concretas y no lo son: valen para el Sol y para
+# una vela, para el espacio y para cualquier plano nocturno terrestre.
+_WEAK_WORDS = {"light", "dark", "darkness", "deep", "closeup", "macro", "abstract",
+               "slow", "beautiful", "stunning", "amazing", "background", "aerial",
+               "view", "footage", "video", "shot", "scene", "time", "lapse",
+               "burning", "burn", "glowing", "night", "sky"}
 
 
 # Familias de palabras que significan lo mismo para este canal. Sin esto la

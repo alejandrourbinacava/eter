@@ -47,7 +47,7 @@ scenes:
     emphasis: Es una constante.
   1:
     query: solar flare eruption
-    generic: [solar flare eruption, sun surface plasma, star surface burning, sun corona closeup]
+    generic: [solar flare eruption, sun surface plasma, star surface plasma detail, sun corona closeup]
     emphasis: Como si alguien apagara un interruptor.
   2:
     query: sun earth distance
