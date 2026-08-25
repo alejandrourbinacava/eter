@@ -17,8 +17,8 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-from . import (assemble, config, imagegen, music, script_gen, sfx, thumbnail,
-               topics, visuals, voice)
+from . import (assemble, captions, config, imagegen, music, script_gen, sfx,
+               thumbnail, topics, visuals, voice)
 from .util import log, require_binaries, setup_logging, write_json
 
 
@@ -88,7 +88,8 @@ def main(argv: list[str] | None = None) -> int:
     visuals.build_clips(plan.scenes, workdir)
     write_json(plan_file, plan.to_dict())
 
-    video = assemble.render(plan.scenes, audio, workdir / "video.mp4")
+    rotulos = captions.build(plan.scenes, workdir)
+    video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos)
 
     # ---- miniatura -------------------------------------------------------
     hero = _pick_hero(plan, workdir, video)

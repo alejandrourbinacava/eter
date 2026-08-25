@@ -152,6 +152,30 @@ def image_is_clean(path: Path) -> bool:
 # --------------------------------------------------------------------------
 
 
+def _difference(a: Path, b: Path) -> float:
+    """Diferencia media entre dos fotogramas. 0 = idénticos."""
+    try:
+        from PIL import Image, ImageChops
+
+        with Image.open(a) as ia, Image.open(b) as ib:
+            ga, gb = ia.convert("L"), ib.convert("L")
+            hist = ImageChops.difference(ga, gb).histogram()
+    except Exception:
+        return 99.0  # ante la duda, darlo por bueno
+
+    total = sum(hist)
+    if not total:
+        return 0.0
+    return sum(i * n for i, n in enumerate(hist)) / total
+
+
+# Por debajo de esto, dos fotogramas separados por SAMPLE_EVERY segundos son
+# prácticamente el mismo: el clip está congelado y en pantalla se lee como una
+# foto. Calibrado sobre los planos del primer vídeo largo, donde el 19 % daba
+# menos de 3 y cuatro daban exactamente 0.
+MIN_MOTION = 2.5
+
+
 def clean_windows(video: Path, duration: float, min_len: float,
                   strict: bool = True) -> list[list[float]]:
     """Devuelve los intervalos [inicio, fin] del clip que son utilizables.
@@ -179,6 +203,16 @@ def clean_windows(video: Path, duration: float, min_len: float,
             return [[0.0, duration]]
 
         verdicts = [frame_is_clean(f, strict=strict) for f in frames]
+
+        # Y además tiene que MOVERSE. Un clip congelado es una imagen
+        # disfrazada, y el canal pidió clips. Cada veredicto se compara con el
+        # fotograma siguiente; si no cambia nada, ese tramo no vale.
+        for i in range(len(frames)):
+            if not verdicts[i]:
+                continue
+            vecino = frames[i + 1] if i + 1 < len(frames) else frames[i - 1]
+            if vecino is frames[i] or _difference(frames[i], vecino) < MIN_MOTION:
+                verdicts[i] = False
 
     # Cada veredicto cubre su bucket de SAMPLE_EVERY segundos.
     windows: list[list[float]] = []

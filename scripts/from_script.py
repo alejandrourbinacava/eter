@@ -35,7 +35,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import yaml  # noqa: E402
 
-from pipeline import assemble, config, music, sfx, thumbnail, visuals, voice  # noqa: E402
+from pipeline import (assemble, captions, config, music, sfx, thumbnail,  # noqa: E402
+                      visuals, voice)
 from pipeline.script_gen import Scene, VideoPlan  # noqa: E402
 from pipeline.util import (assert_no_text_lost, log, require_binaries,  # noqa: E402
                            sentences, setup_logging, slugify, write_json)
@@ -155,7 +156,8 @@ def main(argv=None) -> int:
     audio = voice.mix(plan.scenes, workdir, music.track(plan.title), bed)
 
     visuals.build_clips(plan.scenes, workdir)
-    video = assemble.render(plan.scenes, audio, workdir / "video.mp4")
+    rotulos = captions.build(plan.scenes, workdir)
+    video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos)
 
     hero = None
     raw = workdir / "raw"

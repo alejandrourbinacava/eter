@@ -145,9 +145,10 @@ TRANSITIONS = (
 # --------------------------------------------------------------------------
 # Efectos de sonido de transición
 # --------------------------------------------------------------------------
-# Nivel por debajo de la voz. A -20 dB se siente en el pecho sin tapar la
-# narración; por encima de -14 el vídeo empieza a sonar a tráiler.
-SFX_DB = float(os.getenv("ETER_SFX_DB", "-20"))
+# Nivel por debajo de la voz. A -20 dB los disparos quedaban solo 3 o 4 dB por
+# encima del resto de la mezcla —medido en el máster del primer vídeo largo— y
+# no se oían. A -12 se perciben sin tapar la narración.
+SFX_DB = float(os.getenv("ETER_SFX_DB", "-12"))
 
 # El impacto tarda esto en llegar a su pico, medido sobre su envolvente. Se
 # dispara con esa antelación para que el golpe caiga EN la palabra marcada.
@@ -158,6 +159,10 @@ IMPACT_PEAK = 0.40
 SFX_ENABLED = os.getenv("ETER_SFX", "1") not in ("0", "false", "no")
 
 SFX_CACHE = CACHE_DIR / "sfx"
+
+# Rótulos de frase clave sobre el plano, en las mismas frases de remate que
+# llevan el golpe de sonido. Ver captions.py.
+CAPTIONS_ENABLED = os.getenv("ETER_CAPTIONS", "1") not in ("0", "false", "no")
 
 # Tres sonidos, cada uno con su función. Duración en segundos.
 SFX_PROMPTS = {

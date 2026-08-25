@@ -11,11 +11,12 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
+from . import captions as captions_mod
 from . import config
 from .util import ffmpeg, log, probe_duration
 
 
-def render(scenes, audio: Path, dest: Path) -> Path:
+def render(scenes, audio: Path, dest: Path, captions=None) -> Path:
     clips = [Path(s.clip_path) for s in scenes]
     if not clips:
         raise RuntimeError("No hay planos que montar")
@@ -65,8 +66,21 @@ def render(scenes, audio: Path, dest: Path) -> Path:
     total = offset + lengths[-1]
     steps.append(
         f"[{current}]vignette=angle=PI/6,"
-        f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[vout]"
+        f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[base]"
     )
+    current = "base"
+
+    # Los rótulos van DESPUÉS del viñeteado y del fundido de entrada: si
+    # entraran antes, el fundido a negro del arranque se los llevaría por
+    # delante y el halo quedaría apagado.
+    extra_inputs: list[str] = []
+    if captions:
+        extra_inputs, caption_steps, current = captions_mod.overlay_filters(
+            captions, current, len(clips) + 1
+        )
+        steps.extend(caption_steps)
+
+    steps.append(f"[{current}]null[vout]")
 
     reparto = ", ".join(f"{k}x{v}" for k, v in Counter(used).most_common())
     log.info("Montando %d escenas (%.1f min); transiciones: %s",
@@ -74,6 +88,7 @@ def render(scenes, audio: Path, dest: Path) -> Path:
     ffmpeg(
         inputs
         + ["-i", str(audio)]
+        + extra_inputs
         + [
             "-filter_complex", ";".join(steps),
             "-map", "[vout]",
