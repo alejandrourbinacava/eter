@@ -211,6 +211,34 @@ _WEAK_WORDS = {"light", "dark", "deep", "closeup", "macro", "abstract", "slow",
                "view", "footage", "video", "shot", "scene", "time", "lapse"}
 
 
+# Familias de palabras que significan lo mismo para este canal. Sin esto la
+# regla de relevancia es literal hasta el absurdo: «frozen moon surface in
+# orbit» se rechazaba para «ice crust from space» porque no dice «ice» ni
+# «space», siendo justo el plano que se buscaba.
+_SINONIMOS = [
+    {"ice", "icy", "frozen", "freeze", "glacial", "glacier", "frost", "crust"},
+    {"space", "orbit", "orbital", "orbiting", "cosmic", "cosmos", "deepspace",
+     "interstellar", "celestial", "universe"},
+    {"sun", "solar", "star", "stellar", "corona", "coronal", "photosphere"},
+    {"planet", "planetary", "world", "globe", "moon", "lunar"},
+    {"ocean", "sea", "water", "underwater", "abyss", "marine"},
+    {"lava", "magma", "molten", "volcanic", "volcano", "eruption"},
+    {"cloud", "clouds", "storm", "atmosphere", "vapor", "mist"},
+    {"aurora", "borealis", "magnetic", "magnetosphere", "particles", "plasma"},
+    {"galaxy", "galactic", "nebula", "milky", "starfield", "stars"},
+    {"night", "dark", "darkness", "black", "void", "shadow"},
+]
+
+
+def _expandir(palabras: set[str]) -> set[str]:
+    """Añade las familias a las que pertenece cada palabra."""
+    fuera = set(palabras)
+    for familia in _SINONIMOS:
+        if palabras & familia:
+            fuera |= familia
+    return fuera
+
+
 def _matches_query(text: str, query: str) -> bool:
     """¿Este clip trata REALMENTE de lo que se ha buscado?
 
@@ -223,12 +251,17 @@ def _matches_query(text: str, query: str) -> bool:
     wanted = _tokens(query) - _WEAK_WORDS
     if not wanted:
         return True
-    return bool(_tokens(text) & wanted)
+    return bool(_tokens(text) & _expandir(wanted))
 
 
-# Palabras que sitúan la cámara FUERA de la Tierra. Si la búsqueda las lleva,
-# el clip también tiene que llevar alguna: «earth clouds from space» pedía la
-# Tierra vista desde órbita y devolvía nubes al atardecer desde el suelo.
+# Palabras que sitúan la cámara FUERA de la Tierra. Antes esto era una
+# prohibición —si la búsqueda decía «from space», el clip tenía que decirlo
+# también— y era demasiado rígido: tiraba planos de hielo perfectos para una
+# escena sobre un planeta helado solo porque estaban rodados desde un dron.
+#
+# Ahora es una PREFERENCIA. El guion es de espacio casi siempre, así que un
+# clip orbital gana; pero cuando la narración habla de la Tierra o de un
+# paisaje terrestre, ese plano entra sin problema si no hay nada mejor.
 _ORBITAL_CUES = {"space", "orbit", "orbital", "orbiting", "earth", "planet",
                  "planetary", "moon", "satellite", "iss", "station", "cosmic",
                  "galaxy", "nebula", "star", "stars", "interstellar", "deepspace"}
@@ -255,11 +288,18 @@ def _is_space_clip(text: str, query: str = "") -> bool:
         return False
     if not _matches_query(text, query):
         return False
-    # Coherencia de punto de vista: si se pide algo visto desde el espacio, el
-    # clip tiene que estar en el espacio.
-    if _from_orbit(query) and not _from_orbit(text):
-        return False
     return bool(words & (_SPACE_WORDS | _TEXTURE_WORDS | _tokens(query)))
+
+
+def _score(text: str, query: str) -> int:
+    """Cuánto encaja un clip. Más alto es mejor."""
+    palabras = _tokens(text)
+    puntos = 2 * len(palabras & (_tokens(query) - _WEAK_WORDS))
+    if palabras & _ORBITAL_CUES:
+        puntos += 3          # el canal es de espacio: lo orbital manda
+    if palabras & _SPACE_WORDS:
+        puntos += 1
+    return puntos
 
 
 def _pexels(query: str, pool: AssetPool) -> str | None:
@@ -274,21 +314,26 @@ def _pexels(query: str, pool: AssetPool) -> str | None:
         )
     except RuntimeError:
         return None
+
+    # Se recogen todos los aceptables y se elige el que más encaja, en vez de
+    # quedarse con el primero que pase el filtro.
+    candidatos = []
     for video in r.json().get("videos", []):
-        if not pool.take(f"pexels:{video['id']}"):
-            continue
         if video.get("duration", 0) < MIN_CLIP_SECONDS:
             continue
-        # La descripción real del clip va en el slug de su URL.
         slug = str(video.get("url", "")).rstrip("/").rsplit("/", 1)[-1]
-        if not _is_space_clip(f"{slug} {video.get('alt', '')}", query):
-            log.debug("  pexels descartado por fuera de tema: %s", slug[:52])
+        texto = f"{slug} {video.get('alt', '')}"
+        if not _is_space_clip(texto, query):
             continue
         files = [f for f in video.get("video_files", []) if (f.get("width") or 0) >= 1280]
         if not files:
             continue
         files.sort(key=lambda f: abs((f.get("width") or 0) - 1920))
-        return files[0]["link"]
+        candidatos.append((_score(texto, query), video["id"], files[0]["link"], slug))
+
+    for _, vid, enlace, slug in sorted(candidatos, key=lambda c: -c[0]):
+        if pool.take(f"pexels:{vid}"):
+            return enlace
     return None
 
 
@@ -304,19 +349,23 @@ def _pixabay(query: str, pool: AssetPool) -> str | None:
         )
     except RuntimeError:
         return None
+    candidatos = []
     for hit in r.json().get("hits", []):
-        if not pool.take(f"pixabay:{hit['id']}"):
-            continue
         if hit.get("duration", 0) < MIN_CLIP_SECONDS:
             continue
-        if not _is_space_clip(f"{hit.get('tags', '')} {hit.get('pageURL', '')}", query):
-            log.debug("  pixabay descartado por fuera de tema: %s", str(hit.get("tags"))[:52])
+        texto = f"{hit.get('tags', '')} {hit.get('pageURL', '')}"
+        if not _is_space_clip(texto, query):
             continue
         streams = hit.get("videos", {})
-        for quality in ("large", "medium", "small"):
-            url = (streams.get(quality) or {}).get("url")
-            if url:
-                return url
+        url = next(((streams.get(q) or {}).get("url")
+                    for q in ("large", "medium", "small")
+                    if (streams.get(q) or {}).get("url")), None)
+        if url:
+            candidatos.append((_score(texto, query), hit["id"], url))
+
+    for _, hid, url in sorted(candidatos, key=lambda c: -c[0]):
+        if pool.take(f"pixabay:{hid}"):
+            return url
     return None
 
 
