@@ -74,7 +74,7 @@ En **Settings → Secrets and variables → Actions → New repository secret**:
 
 | Secreto | Para qué | Sin él |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Escribir el guion | **No arranca** |
+| `ANTHROPIC_API_KEY` o `CLAUDE_API_KEY` | Escribir el guion | **No arranca** |
 | `AI33_API_KEY` | Voz, música y efectos | **No arranca** |
 | `YT_CLIENT_ID` | Subida | No publica |
 | `YT_CLIENT_SECRET` | Subida | No publica |

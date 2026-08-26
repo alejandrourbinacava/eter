@@ -131,8 +131,9 @@ recomendados = {
     "PIXABAY_API_KEY": "clips",
     "YT_REFRESH_TOKEN": "publicar",
 }
+alias = {"ANTHROPIC_API_KEY": "CLAUDE_API_KEY"}
 for clave, para in obligatorios.items():
-    if os.getenv(clave):
+    if os.getenv(clave) or os.getenv(alias.get(clave, "_")):
         print(f"  OK   {clave}")
     else:
         print(f"  FALTA {clave} — sin él no se puede {para}")

@@ -37,7 +37,9 @@ REFERENCE_SCRIPT = BRAND_DIR / "reference_script.txt"
 # --------------------------------------------------------------------------
 
 AI33_API_KEY = os.getenv("AI33_API_KEY", "")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+# Se acepta CLAUDE_API_KEY como alias: es el nombre con el que mucha gente
+# guarda esta clave, y fallar por el nombre del secreto es absurdo.
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY", "")
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "")
 
