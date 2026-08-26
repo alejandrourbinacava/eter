@@ -119,9 +119,12 @@ jobs:
           name: eter-${{ github.run_number }}
           retention-days: 14
           if-no-files-found: ignore
-          # El MP4 se queda fuera a propósito: ya está en YouTube y ocupa
-          # cientos de megas en el almacenamiento de artefactos.
+          # En una publicación normal el MP4 se queda fuera: ya está en YouTube
+          # y ocupa cientos de megas de almacenamiento de artefactos. Pero en
+          # seco no se sube a ningún sitio, así que sin él la ejecución no
+          # devuelve lo único que se quería mirar.
           path: |
+            ${{ inputs.dry_run && 'build/**/video.mp4' || '' }}
             build/**/guion.txt
             build/**/plan.json
             build/**/miniatura.jpg
