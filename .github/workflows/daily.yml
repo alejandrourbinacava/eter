@@ -2,9 +2,14 @@ name: Publicación diaria
 
 on:
   schedule:
-    # 15:00 UTC — el render tarda 20-40 min, así que el vídeo aparece
-    # alrededor de las 17:30-18:00 en Madrid, la franja del canal.
-    - cron: "0 15 * * *"
+    # Las 6:00 de Madrid, todo el año.
+    #
+    # El cron de GitHub solo entiende UTC y no sabe nada del horario de verano,
+    # así que una sola entrada se desfasaría una hora medio año: Madrid es UTC+1
+    # en invierno y UTC+2 en verano. Se disparan las dos horas posibles y el
+    # primer paso del trabajo corta la que no toca.
+    - cron: "0 4 * * *"
+    - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -36,14 +41,32 @@ jobs:
     timeout-minutes: 340
 
     steps:
+      - name: ¿Son las 6 en Madrid?
+        id: hora
+        run: |
+          H=$(TZ=Europe/Madrid date +%H)
+          echo "En Madrid son las $H:00"
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Lanzado a mano, se continúa."
+            echo "sigue=si" >> "$GITHUB_OUTPUT"
+          elif [ "$H" = "06" ]; then
+            echo "sigue=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "No son las 6 en Madrid; este disparo se descarta."
+            echo "sigue=no" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.hora.outputs.sigue == 'si'
 
       - uses: actions/setup-python@v5
+        if: steps.hora.outputs.sigue == 'si'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Hacer sitio en el disco
+        if: steps.hora.outputs.sigue == 'si'
         run: |
           # El runner viene con ~14 GB libres y una producción sin limpiar
           # ocupa 6,7. Quitando las imágenes de Android y .NET se ganan 20 GB.
@@ -51,20 +74,24 @@ jobs:
           df -h / | tail -1
 
       - name: Instalar ffmpeg
+        if: steps.hora.outputs.sigue == 'si'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
 
       - name: Instalar dependencias
+        if: steps.hora.outputs.sigue == 'si'
         run: pip install -r requirements.txt
 
       - name: Cachear la tipografía de marca
+        if: steps.hora.outputs.sigue == 'si'
         uses: actions/cache@v4
         with:
           path: brand/fonts
           key: eter-fonts-v1
 
       - name: Producir y publicar
+        if: steps.hora.outputs.sigue == 'si'
         env:
           # Vale con cualquiera de los dos nombres.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.CLAUDE_API_KEY }}
@@ -82,7 +109,7 @@ jobs:
           python -m pipeline.run ${{ inputs.dry_run && '--dry-run' || '' }}
 
       - name: Espacio restante
-        if: always()
+        if: always() && steps.hora.outputs.sigue == 'si'
         run: df -h / | tail -1
 
       - name: Guardar guion, miniatura y subtítulos
@@ -102,7 +129,7 @@ jobs:
             build/**/subtitulos.srt
 
       - name: Registrar la publicación en el repositorio
-        if: success() && !inputs.dry_run
+        if: success() && !inputs.dry_run && steps.hora.outputs.sigue == 'si'
         run: |
           git config user.name  "eter-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
