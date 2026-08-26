@@ -1,0 +1,36 @@
+name: Comprobación
+
+# El cron diario tarda tres horas en fallar. Esto tarda treinta segundos y caza
+# lo que rompió alguna ejecución real: un YAML mal entrecomillado, una frase de
+# remate que no aparece literal, un filtro que rechaza el material bueno.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Comprobar ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Comprobar el repositorio
+        # Sin secretos a propósito: esto verifica el código, no las claves.
+        # El aviso de secretos que falten es informativo y no tumba el trabajo.
+        run: python scripts/check.py

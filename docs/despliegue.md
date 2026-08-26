@@ -81,7 +81,21 @@ las instrucciones en su cabecera.
 
 ---
 
-## 4. La primera ejecución, en seco
+## 4. Antes de nada, la comprobación
+
+```bash
+python scripts/check.py
+```
+
+Treinta segundos, sin tocar la red ni gastar créditos. Verifica sintaxis,
+importaciones, la cola de temas, los planes visuales, los filtros de material y
+el propio workflow, y te dice qué secretos faltan. Todo lo que comprueba ha roto
+una ejecución real en algún momento.
+
+En GitHub se ejecuta sola en cada push (`.github/workflows/check.yml`), así que
+si rompes algo te enteras en medio minuto y no tres horas después.
+
+## 5. La primera ejecución, en seco
 
 No dejes que el primer intento publique. En la pestaña **Actions →
 Publicación diaria → Run workflow**, marca **«Renderizar sin publicar»**.
@@ -96,7 +110,7 @@ cuándo hacerlo público.
 
 ---
 
-## 5. Espacio en disco
+## 6. Espacio en disco
 
 Un runner tiene unos 14 GB libres y una producción de veinte minutos ocupa
 **6,7 GB** si no se limpia nada:
@@ -116,7 +130,7 @@ descargar.
 
 ---
 
-## 6. Qué esperar del primer vídeo automático
+## 7. Qué esperar del primer vídeo automático
 
 Lo que el pipeline hace bien, medido sobre la producción real:
 
@@ -138,7 +152,7 @@ Lo que conviene que revises a mano las primeras veces:
 
 ---
 
-## 7. Guiones escritos por ti
+## 8. Guiones escritos por ti
 
 El cron usa la cola de `content/topics.yml`. Para un guion tuyo:
 

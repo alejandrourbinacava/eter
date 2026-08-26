@@ -105,7 +105,7 @@ jobs:
         run: |
           git config user.name  "eter-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add content/published.json content/topics.yml
+          git add -A content/ 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Sin cambios que registrar."
           else
