@@ -125,7 +125,10 @@ SHOT_RHYTHM = (5.5, 3.6, 4.8, 6.0, 3.2, 5.0, 4.2, 5.8, 3.8, 4.5)
 # Música
 # --------------------------------------------------------------------------
 
-MUSIC_DB = float(os.getenv("ETER_MUSIC_DB", "-25"))  # bajo la voz
+# Medido en el máster del vídeo de la estrella de neutrones: a -25 la música
+# quedaba 16,8 dB por debajo de la narración y casi no se oía. El estándar
+# de documental son 11-13 dB, así que sube 5.
+MUSIC_DB = float(os.getenv("ETER_MUSIC_DB", "-20"))  # bajo la voz
 
 # --------------------------------------------------------------------------
 # Transiciones
