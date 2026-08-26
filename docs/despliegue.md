@@ -22,12 +22,19 @@ Y de ahí sale la factura:
 
 | Repositorio | Coste |
 |---|---|
-| **Público** | Gratis, minutos ilimitados |
-| **Privado** | 2.000 minutos al mes incluidos. Un vídeo diario gasta ~5.400 |
+| **Público** | Gratis, minutos ilimitados. La cuota no le aplica |
+| **Privado** | 2.000 min/mes en el plan Free. Un vídeo diario gasta ~5.400 |
 
-Con repositorio privado te pasarías del cupo hacia el día doce de cada mes.
-El exceso se factura a unos 0,008 $/minuto, así que rondaría los **30 $ al
-mes** solo de cómputo.
+Y un detalle que se pasa por alto: **esos 2.000 minutos son por CUENTA, no por
+repositorio**. Se reparten entre todos tus repos privados, así que si ya tienes
+otros con Actions, la bolsa es la misma y el margen es menor.
+
+Con repositorio privado te pasarías del cupo hacia el día doce de cada mes. El
+exceso se factura a unos 0,008 $/minuto en Linux, así que rondaría los **30 $ al
+mes** solo de cómputo. Los multiplicadores de otros sistemas son brutales
+—Windows cuenta doble y macOS diez veces— pero aquí solo se usa Linux.
+
+El consumo real está en `github.com/settings/billing`.
 
 Nada de lo que hay en el repositorio es secreto —las claves van en Secrets, no
 en el código—, así que **público es la opción sensata** salvo que prefieras no
