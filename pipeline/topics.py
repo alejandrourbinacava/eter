@@ -79,7 +79,7 @@ exclusivamente un array JSON, sin texto alrededor y sin vallas de código."""
 
 def replenish(count: int = REPLENISH_COUNT) -> int:
     """Pide temas nuevos y los añade al final de topics.yml."""
-    from .script_gen import client
+    from .script_gen import client, texto_de
 
     existing = [t["title_hint"] for t in load_topics()]
     published = [e.get("title", "") for e in load_history()]
@@ -113,7 +113,7 @@ Devuelve un array JSON de objetos con exactamente estas claves:
         system=REPLENISH_SYSTEM,
         messages=[{"role": "user", "content": prompt}],
     )
-    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content[0].text.strip())
+    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", texto_de(resp))
     try:
         new_topics = json.loads(raw)
     except json.JSONDecodeError:

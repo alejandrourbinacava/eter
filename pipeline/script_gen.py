@@ -26,6 +26,19 @@ from .util import assert_no_text_lost, log, sentences
 _client: Anthropic | None = None
 
 
+def texto_de(resp) -> str:
+    """El texto de la respuesta, saltándose los bloques de razonamiento.
+
+    `content[0]` no siempre es texto: los modelos que razonan devuelven primero
+    uno o varios ThinkingBlock, y coger el primero a ciegas revienta con un
+    AttributeError. Se concatenan todos los bloques que sí traen texto.
+    """
+    partes = [b.text for b in resp.content if getattr(b, "type", None) == "text"]
+    if not partes:
+        partes = [b.text for b in resp.content if hasattr(b, "text")]
+    return "\n".join(partes).strip()
+
+
 def client() -> Anthropic:
     global _client
     if _client is None:
@@ -143,7 +156,7 @@ Tiempo 1 y termina en la última frase del Tiempo 5. No escribas nada más."""
         system=SYSTEM,
         messages=[{"role": "user", "content": prompt}],
     )
-    text = resp.content[0].text.strip()
+    text = texto_de(resp)
     text = _strip_stage_directions(text)
     log.info("Guion escrito: %d palabras (~%.1f min)", len(text.split()),
              len(text.split()) / config.WORDS_PER_MINUTE)
@@ -248,7 +261,7 @@ nunca texto en pantalla, nunca personas hablando a cámara."""
         system=PLAN_SYSTEM,
         messages=[{"role": "user", "content": prompt}],
     )
-    raw = resp.content[0].text.strip()
+    raw = texto_de(resp)
     raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
     try:
         return json.loads(raw)
