@@ -24,7 +24,10 @@ from .util import log, require_binaries, setup_logging, write_json
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Pipeline de publicación de Éter")
-    parser.add_argument("--dry-run", action="store_true", help="no subir a YouTube")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="prueba: ni sube ni toca la cola de temas")
+    parser.add_argument("--no-upload", action="store_true",
+                        help="renderiza y marca el tema como hecho, pero no sube")
     parser.add_argument("--script-only", action="store_true", help="parar tras el guion")
     parser.add_argument("--no-render", action="store_true", help="parar tras la locución")
     parser.add_argument("--topic", type=int, help="índice del tema en topics.yml")
@@ -99,20 +102,27 @@ def main(argv: list[str] | None = None) -> int:
     (workdir / "descripcion.txt").write_text(description, encoding="utf-8")
 
     if args.dry_run:
-        log.info("Modo prueba: no se sube. Revisa %s", workdir)
+        log.info("Modo prueba: no se sube y la cola no avanza. Revisa %s", workdir)
         return 0
 
     # ---- publicación -----------------------------------------------------
-    from . import youtube
+    # Sin --no-upload se sube a YouTube. Con él, el vídeo se queda en el
+    # artefacto para subirlo a mano, pero el tema se marca igualmente: si no,
+    # el cron produciría el mismo vídeo todas las mañanas.
+    video_id = None
+    if args.no_upload:
+        log.info("Sin subida: el vídeo queda en %s para subirlo a mano", workdir)
+    else:
+        from . import youtube
 
-    video_id = youtube.upload(
-        video,
-        title=plan.title,
-        description=description,
-        tags=plan.tags,
-        thumbnail=thumb,
-        captions=srt,
-    )
+        video_id = youtube.upload(
+            video,
+            title=plan.title,
+            description=description,
+            tags=plan.tags,
+            thumbnail=thumb,
+            captions=srt,
+        )
     topics.record(topic, plan, video_id)
 
     if topics.remaining() < topics.MIN_BACKLOG:
