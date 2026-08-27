@@ -2,7 +2,9 @@ name: Publicación diaria
 
 on:
   schedule:
-    # Las 6:00 de Madrid, todo el año.
+    # Arranca a las 6:00 de Madrid, todo el año. El render tarda unos 95
+    # minutos, así que el vídeo está subido en privado sobre las 7:35 y a
+    # las 8 ya se puede revisar, que es lo que se pidió.
     #
     # El cron de GitHub solo entiende UTC y no sabe nada del horario de verano,
     # así que una sola entrada se desfasaría una hora medio año: Madrid es UTC+1
@@ -20,7 +22,7 @@ on:
         description: "Visibilidad del vídeo"
         type: choice
         options: [public, unlisted, private]
-        default: public
+        default: private
       minutes:
         description: "Duración objetivo en minutos"
         default: "14"
@@ -103,7 +105,10 @@ jobs:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-          ETER_PRIVACY: ${{ inputs.privacy || 'public' }}
+          # El cron sube SIEMPRE en privado: el vídeo aparece cada mañana
+          # en el canal listo para revisar, y publicarlo es un clic. Solo un
+          # lanzamiento a mano puede pedir otra visibilidad.
+          ETER_PRIVACY: ${{ inputs.privacy || 'private' }}
           ETER_TARGET_MINUTES: ${{ inputs.minutes || '14' }}
         run: |
           python -m pipeline.run ${{ inputs.dry_run && '--dry-run' || '' }}
