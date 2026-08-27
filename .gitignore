@@ -4,6 +4,10 @@
 
 build*/
 .cache/
+
+# Vídeos bajados de los artefactos de Actions. Son cientos de megas por
+# vídeo y ya existen en el runner; no tienen por qué entrar en el repo.
+descargas/
 *.mp4
 *.mp3
 *.m4a
