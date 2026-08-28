@@ -152,15 +152,31 @@ jobs:
           name: eter-${{ github.run_number }}
           retention-days: 30
           if-no-files-found: ignore
-          # El MP4 es lo que se viene a buscar: el cron no sube a YouTube, se
-          # descarga de aquí y se sube a mano.
+          # El MP4 va por Releases, no por aquí: los artefactos consumen la
+          # cuota de almacenamiento de la cuenta —500 MB en el plan gratuito,
+          # que un solo vídeo casi agota— y hacer público el repositorio libera
+          # los minutos pero no el almacenamiento.
           path: |
-            build/**/video.mp4
             build/**/guion.txt
             build/**/plan.json
             build/**/miniatura.jpg
             build/**/descripcion.txt
             build/**/subtitulos.srt
+
+      - name: Publicar el vídeo como release
+        if: success() && steps.hora.outputs.sigue == 'si'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VIDEO=$(find build -name video.mp4 | head -1)
+          if [ -z "$VIDEO" ]; then
+            echo "No se ha producido ningún vídeo."; exit 1
+          fi
+          DIR=$(dirname "$VIDEO")
+          TAG="video-$(TZ=Europe/Madrid date +%Y%m%d-%H%M)"
+          TITULO=$(python -c "import json,sys;print(json.load(open(sys.argv[1],encoding='utf-8'))['title'])" "$DIR/plan.json")
+          echo "Publicando «$TITULO» en $TAG ($(du -h "$VIDEO" | cut -f1))"
+          gh release create "$TAG"             "$VIDEO" "$DIR/miniatura.jpg" "$DIR/subtitulos.srt" "$DIR/descripcion.txt"             --title "$TITULO" --notes-file "$DIR/descripcion.txt"
 
       - name: Registrar la publicación en el repositorio
         if: success() && !inputs.dry_run && steps.hora.outputs.sigue == 'si'
