@@ -241,6 +241,7 @@ Devuelve este JSON exacto:
     {{
       "index": 0,
       "visual_query": "2-4 palabras EN INGLÉS para buscar en archivos de vídeo de la NASA y bancos de imágenes. Concreto y filmable: 'saturn rings closeup', 'solar flare eruption'. Nunca abstracto: nada de 'human curiosity' ni 'the passage of time'.",
+      "visual_generic": ["CUATRO búsquedas EN INGLÉS de 2-4 palabras para bancos de vídeo de stock, PROPIAS DE ESTE BLOQUE. Son las que de verdad llenan la pantalla: el bloque ocupa unos ocho planos y cada una alimenta dos. Filmables y concretas, del asunto del bloque, pero SIN nombres propios: los bancos nunca devuelven cero, devuelven lo que se parece por letras, y 'great red spot' acaba siendo un pájaro carpintero. Ejemplo para un bloque sobre la corteza de una estrella de neutrones: ['molten metal surface', 'glowing crystal lattice', 'extreme pressure simulation', 'dense matter render']"],
       "visual_prompt": "una frase EN INGLÉS describiendo un plano fotorrealista de documental para ese bloque, por si hay que generarlo",
       "emphasis": "LA frase del bloque que más golpea, copiada LITERAL Y EXACTA del texto, tal cual aparece. Cadena vacía si el bloque no tiene ninguna."
     }}
@@ -251,6 +252,9 @@ Reglas de los planos:
 - Un objeto por bloque, en orden, con "index" de 0 a {len(blocks) - 1}.
 - El plano ilustra lo que se está diciendo en ese bloque concreto.
 - Varía: no repitas la misma visual_query en bloques consecutivos.
+- Las cuatro "visual_generic" son de ESE bloque y solo de ese. Es el error que
+  hay que evitar por encima de todo: si repites la misma lista en varios
+  bloques, el vídeo entero se monta con cuatro clips repetidos cien veces.
 - Material real de archivo espacial o render fotorrealista. Nunca diagramas, \
 nunca texto en pantalla, nunca personas hablando a cámara."""
 
@@ -312,6 +316,11 @@ def _generic_list(value) -> list[str]:
     items = [str(v).strip() for v in (value or []) if str(v).strip()]
     # Descartar frases que sean instrucciones y no búsquedas.
     items = [i for i in items if 2 <= len(i.split()) <= 6]
+    if not items:
+        # Pasó sin avisar durante varios vídeos: el prompt no pedía este campo
+        # y las 23 escenas cayeron al mismo respaldo, así que el montaje entero
+        # salió de cuatro búsquedas.
+        log.warning("Escena sin visual_generic utilizable; se usa el respaldo genérico")
     return items or list(_FALLBACK_GENERIC)
 
 

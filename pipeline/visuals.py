@@ -774,9 +774,20 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
     by_scene = {s.index: s for s in scenes}
     for shot in plan:
         scene = by_scene[shot.scene_index]
-        options = list(scene.visual_generic) or [scene.visual_query or "deep space stars"]
-        shot.query = options[shot.index % len(options)]
-        subjects.setdefault(shot.query, scene.visual_query or shot.query)
+        # La consulta específica se intercala entre las genéricas en vez de
+        # quedarse solo como etiqueta de enrutado. Es la que nombra lo que se
+        # está diciendo —"neutron star crust", no "deep space stars"—, así que
+        # llena alrededor de la mitad de los planos de la escena.
+        especifica = (scene.visual_query or "").strip()
+        opciones: list[str] = []
+        for generica in scene.visual_generic or []:
+            if especifica:
+                opciones.append(especifica)
+            opciones.append(generica)
+        if not opciones:
+            opciones = [especifica or "deep space stars"]
+        shot.query = opciones[shot.index % len(opciones)]
+        subjects.setdefault(shot.query, especifica or shot.query)
 
     bank = shots.ClipBank(
         lambda q: _fetch_source(subjects.get(q, q), q, pool, raw_dir, stats)
@@ -785,6 +796,10 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
 
     log.info("Montaje: %d planos de %.0f-%.0f s para %d escenas, %d búsquedas distintas",
              len(plan), config.SHOT_MIN, config.SHOT_MAX, len(scenes), len(subjects))
+    if len(subjects) < len(scenes):
+        log.warning(
+            "Solo %d búsquedas para %d escenas: el plan repite consultas entre "
+            "bloques y el montaje va a salir repetitivo", len(subjects), len(scenes))
 
     autocrops: dict[str, str] = {}
     fillers = 0

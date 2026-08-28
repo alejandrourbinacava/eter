@@ -109,7 +109,10 @@ class ClipBank:
     # contiguas del mismo clip y se parecen tanto que el corte no se nota.
     SOURCES_PER_QUERY = 3
 
-    def __init__(self, fetch, max_share: float = 0.22) -> None:
+    # Con 0.22 un solo clip podía cubrir 42 planos de 194. Medido en el vídeo
+    # de la estrella de neutrones: el más repetido salía 23 veces y ni
+    # siquiera rozaba el tope. Con 0.06 son 11 de 194.
+    def __init__(self, fetch, max_share: float = 0.06) -> None:
         # fetch(query) -> (Path, is_image) | None
         self._fetch = fetch
         self._by_query: dict[str, list[Source]] = {}

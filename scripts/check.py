@@ -95,6 +95,23 @@ for plan_file in sorted((RAIZ / "content" / "plans").glob("*.yml")):
     except Exception as exc:  # noqa: BLE001
         comprobar(f"{plan_file.name} es YAML válido", False, str(exc))
 
+print("\nPlan de producción")
+# El prompt no pedía visual_generic y las 23 escenas caían al mismo respaldo:
+# el vídeo entero se montó con cuatro búsquedas. Que no vuelva a pasar callando.
+import inspect  # noqa: E402
+
+_fuente = inspect.getsource(script_gen.plan_production)
+comprobar("el prompt pide visual_generic", '"visual_generic"' in _fuente)
+comprobar("y avisa de no repetirla entre bloques", "ESE bloque" in _fuente)
+
+_reparto = inspect.getsource(visuals.build_clips)
+comprobar("la consulta específica también se busca",
+          "opciones.append(especifica)" in _reparto)
+
+comprobar("el tope de reutilización no pasa del 10 %",
+          "max_share: float = 0.0" in inspect.getsource(shots.ClipBank),
+          "sigue permitiendo que un solo clip llene el vídeo")
+
 print("\nFiltros de material")
 casos = [
     ("aerial-view-of-solar-panel-farm", "satellite solar panels space", False),
