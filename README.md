@@ -6,10 +6,11 @@ manteniendo la voz, el ritmo y el aspecto de los vídeos ya publicados.
 
 Una ejecución produce: guion de ~2.350 palabras, locución de 14 minutos,
 montaje 1080p con material de archivo, miniatura con la plantilla del canal,
-subtítulos en español, título, descripción y etiquetas — y lo sube.
+subtítulos en español, título, descripción y etiquetas, y lo deja todo
+listo para descargar.
 
 ```
-tema  →  guion  →  locución  →  planos  →  montaje  →  miniatura  →  YouTube
+tema  →  guion  →  locución  →  planos  →  montaje  →  miniatura  →  artefacto
 ```
 
 ---
@@ -41,9 +42,11 @@ python -m pipeline.run                          # el ciclo completo
 | `AI33_API_KEY` | Voz de Javier vía ai33.pro | ~15.400 créditos/vídeo |
 | `PEXELS_API_KEY` | Clips de stock | Gratis |
 | `PIXABAY_API_KEY` | Clips de stock | Gratis |
-| `YT_CLIENT_ID` / `YT_CLIENT_SECRET` / `YT_REFRESH_TOKEN` | Subida | Gratis |
+| `YT_CLIENT_ID` / `YT_CLIENT_SECRET` / `YT_REFRESH_TOKEN` | Subida, **opcional** | Gratis |
 
-Las dos primeras y las tres de YouTube son obligatorias. Pexels y Pixabay son
+Las dos primeras son obligatorias. Las tres de YouTube solo hacen falta si
+quieres que suba solo; por defecto el cron no sube y el vídeo se descarga del
+artefacto. Pexels y Pixabay son
 opcionales pero **muy** recomendables: sin ellas el pipeline se queda sin
 material en movimiento y tira solo del archivo fotográfico de la NASA. Se sacan
 en dos minutos en [pexels.com/api](https://www.pexels.com/api/) y
@@ -202,27 +205,37 @@ factura de unos 30 $ al mes a cero.
 
 ## El workflow
 
-`.github/workflows/daily.yml` se dispara a las 15:00 UTC. Instala ffmpeg,
-produce el vídeo, lo sube, y commitea `content/published.json` con lo publicado.
-Guarda guion, miniatura, descripción y subtítulos como artefacto durante 14
-días; el MP4 no, que ya está en YouTube.
+`.github/workflows/daily.yml` arranca a las 6:00 de Madrid. Instala ffmpeg,
+produce el vídeo, marca el tema como hecho y commitea `content/published.json`.
+Guarda el MP4, la miniatura, la descripción, los subtítulos y el guion como
+artefacto durante 30 días. **No sube a YouTube**: el vídeo se descarga y se
+sube a mano. Para que suba solo, añade los secretos `YT_*` y lanza a mano con
+la casilla «Subir a YouTube».
 
-También se puede lanzar a mano desde la pestaña Actions, eligiendo visibilidad y
-duración. Para probar sin publicar, marca «Renderizar sin publicar».
+Tres detalles del cron que costaron dos días de silencio:
 
-Medido sobre la primera producción real: un vídeo de 20 minutos tardó 75 en un
-equipo de 16 núcleos. El runner tiene 4, así que cuenta con 2 horas y media o
-3. En repositorio público los minutos son gratis; en privado te pasarías del
-cupo hacia el día doce de cada mes.
+- **Nunca en la hora en punto.** Es cuando GitHub tiene más cola y lo primero
+  que descarta. Medido aquí: un cron a las 15:00 se ejecutó a las 17:04.
+- **UTC sin horario de verano.** Madrid es UTC+1 en invierno y UTC+2 en verano,
+  así que se disparan las dos horas posibles y un guardián corta la que sobra.
+- **El guardián acepta una ventana, no una hora exacta.** Comparar la hora justa
+  hacía que cualquier disparo retrasado se tirase a la basura. Lo que evita el
+  vídeo duplicado es el historial, no el reloj.
+
+Medido sobre las producciones reales en la nube: **95 minutos por vídeo**, así
+que arrancando a las 6 está listo sobre las 7:35. En repositorio público los
+minutos son gratis; en privado un vídeo diario se pasa del cupo hacia el día
+doce y cuesta unos 30 $ al mes.
 
 ## Coste y cuotas
 
 Por vídeo: ~0,40 $ de guion y unos 15.400 créditos de ai33. Con 1,9 millones de
-créditos hay para unos 120 vídeos de locución. Pexels, Pixabay, NASA y la subida
-a YouTube no cuestan nada.
+créditos hay para unos 120 vídeos de locución. Pexels, Pixabay, NASA y los
+minutos de Actions en repositorio público no cuestan nada.
 
-La cuota diaria de la YouTube Data API es de 10.000 unidades. Una subida gasta
-1.600 y la miniatura 50, así que un vídeo al día cabe con enorme margen.
+Si activas la subida automática: la cuota diaria de la YouTube Data API es de
+10.000 unidades, una subida gasta 1.600 y la miniatura 50, así que un vídeo al
+día cabe con enorme margen.
 
 ## Sobre publicar a diario
 
@@ -232,6 +245,8 @@ YouTube (julio de 2025) vigila, con la monetización en juego. El pipeline
 mitiga lo que puede — cada vídeo parte de una anomalía distinta, con estructura,
 material y duración propios— pero el riesgo no es cero.
 
-Si prefieres control humano sin perder la automatización, pon
-`ETER_PRIVACY=private`: el vídeo se sube listo cada día y tú decides cuándo
-hacerlo público.
+Por eso el ajuste por defecto es el más conservador: **el cron no publica**.
+Produce el vídeo y lo deja en el artefacto, y la decisión de subirlo es tuya
+cada mañana. Si prefieres que suba solo pero sin exponerlo, añade los secretos
+`YT_*` y deja `ETER_PRIVACY=private`: aparece cada día en el canal en privado y
+tú eliges cuándo hacerlo público.
