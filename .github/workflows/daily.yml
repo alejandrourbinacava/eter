@@ -189,5 +189,13 @@ jobs:
           else
             LAST=$(python -c "import json;d=json.load(open('content/published.json',encoding='utf-8'));print(d[-1]['title'])")
             git commit -m "Publica: $LAST"
-            git push
+            # El render dura hora y media y en ese rato main puede haber
+            # avanzado. Sin esto el push se rechaza y el tema no queda marcado,
+            # con lo que al día siguiente se repetiría el mismo vídeo.
+            for intento in 1 2 3; do
+              git push && exit 0
+              echo "Push rechazado (intento $intento); rebase sobre main y reintento."
+              git pull --rebase --autostash origin main || exit 1
+            done
+            echo "No se ha podido registrar tras 3 intentos."; exit 1
           fi
