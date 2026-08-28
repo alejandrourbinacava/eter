@@ -10,8 +10,13 @@ on:
     # así que una sola entrada se desfasaría una hora medio año: Madrid es UTC+1
     # en invierno y UTC+2 en verano. Se disparan las dos horas posibles y el
     # primer paso del trabajo corta la que no toca.
-    - cron: "0 4 * * *"
-    - cron: "0 5 * * *"
+    #
+    # Nunca en la hora en punto: es cuando GitHub tiene más cola y es lo
+    # primero que descarta. Medido en este repo, un disparo a las 15:00 se
+    # ejecutó a las 17:04.
+    - cron: "17 3 * * *"
+    - cron: "17 4 * * *"
+    - cron: "43 6 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -47,23 +52,35 @@ jobs:
     timeout-minutes: 340
 
     steps:
-      - name: ¿Son las 6 en Madrid?
+      - uses: actions/checkout@v4
+
+      - name: ¿Toca trabajar?
         id: hora
         run: |
           H=$(TZ=Europe/Madrid date +%H)
-          echo "En Madrid son las $H:00"
+          HOY=$(TZ=Europe/Madrid date +%F)
+          echo "En Madrid son las $H:00 del $HOY"
+
           if [ "${{ github.event_name }}" != "schedule" ]; then
             echo "Lanzado a mano, se continúa."
-            echo "sigue=si" >> "$GITHUB_OUTPUT"
-          elif [ "$H" = "06" ]; then
-            echo "sigue=si" >> "$GITHUB_OUTPUT"
-          else
-            echo "No son las 6 en Madrid; este disparo se descarta."
-            echo "sigue=no" >> "$GITHUB_OUTPUT"
+            echo "sigue=si" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
-      - uses: actions/checkout@v4
-        if: steps.hora.outputs.sigue == 'si'
+          # Ventana, no hora exacta: GitHub retrasa las tareas programadas y
+          # con una comparación exacta un disparo tardío se tiraba a la basura.
+          if [ "$H" -lt 6 ] || [ "$H" -gt 10 ]; then
+            echo "Fuera de la ventana 6:00-10:59; se descarta."
+            echo "sigue=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          # Como ahora hay tres disparos y una ventana ancha, lo que evita el
+          # vídeo duplicado es el historial, no el reloj.
+          if [ -f content/published.json ] && grep -q "\"$HOY\"" content/published.json; then
+            echo "Ya hay un vídeo con fecha $HOY; se descarta."
+            echo "sigue=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          echo "sigue=si" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         if: steps.hora.outputs.sigue == 'si'
