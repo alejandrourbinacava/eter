@@ -70,21 +70,42 @@ def http(
     raise RuntimeError(f"HTTP falló tras {tries} intentos: {url}") from last
 
 
-def download(url: str, dest: Path, *, max_bytes: int | None = None) -> Path:
+def download(url: str, dest: Path, *, max_bytes: int | None = None,
+             tries: int = 4) -> Path:
     """Descarga a fichero. Corta si supera max_bytes (los MP4 de la NASA
-    pueden pesar 1,7 GB y no queremos eso en un runner)."""
+    pueden pesar 1,7 GB y no queremos eso en un runner).
+
+    Reintenta como http(): un hipo del CDN tumbó una producción entera a los
+    24 minutos —la locución se baja por aquí— porque esta función era la única
+    ruta de red sin reintento.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with SESSION.get(url, stream=True, timeout=120) as r:
-        r.raise_for_status()
-        total = 0
-        with open(dest, "wb") as fh:
-            for chunk in r.iter_content(1 << 16):
-                fh.write(chunk)
-                total += len(chunk)
-                if max_bytes and total > max_bytes:
-                    log.debug("Descarga truncada a %.0f MB: %s", total / 1e6, url[:70])
-                    break
-    return dest
+    last: Exception | None = None
+    for attempt in range(tries):
+        try:
+            with SESSION.get(url, stream=True, timeout=120) as r:
+                r.raise_for_status()
+                total = 0
+                with open(dest, "wb") as fh:
+                    for chunk in r.iter_content(1 << 16):
+                        fh.write(chunk)
+                        total += len(chunk)
+                        if max_bytes and total > max_bytes:
+                            log.debug("Descarga truncada a %.0f MB: %s",
+                                      total / 1e6, url[:70])
+                            break
+            return dest
+        except requests.RequestException as exc:
+            last = exc
+            dest.unlink(missing_ok=True)   # no dejar un fichero a medias
+            if attempt == tries - 1:
+                break
+            espera = 2**attempt + random.uniform(0, 0.5)
+            log.warning("Descarga falló (%s), reintento %d/%d en %.1fs: %s",
+                        exc.__class__.__name__, attempt + 1, tries - 1,
+                        espera, url[:70])
+            time.sleep(espera)
+    raise RuntimeError(f"Descarga falló tras {tries} intentos: {url}") from last
 
 
 # --------------------------------------------------------------------------
