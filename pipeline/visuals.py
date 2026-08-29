@@ -165,6 +165,16 @@ _TEXTURE_WORDS = {
 
 # Señales de que el clip no es un plano de recurso, pase lo que pase.
 _REJECT_WORDS = {
+    # Relleno abstracto de banco de stock. Es lo peor que devuelven Pexels y
+    # Pixabay para consultas de espacio: fondos de vídeo, bucles de partículas,
+    # bolas de discoteca. Visto en un vídeo real, sobre la frase «ahí es donde
+    # el cuerpo se partiría en dos», salían olas del mar y un chapoteo.
+    "abstract", "background", "backdrop", "loop", "seamless", "motion graphic",
+    "motiongraphics", "vj", "bokeh", "light leak", "lens flare",
+    "particles", "confetti", "glitter", "neon", "disco", "club", "party",
+    "fractal", "kaleidoscope", "mandala", "psychedelic", "screensaver",
+    "wallpaper", "gradient", "ink", "paint", "splash", "water drop", "bubble",
+    "smoke", "wave", "ocean", "sea", "underwater",
     # bichos y gente
     "woodpecker", "bird", "hamster", "dog", "cat", "fish", "jellyfish", "shark",
     "turtle", "whale", "stingray", "crab", "coral", "reef", "seal", "lion",
@@ -675,27 +685,12 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
             log.debug("  fuente <- svs '%s'", variant)
             return dest, False
 
-    # 3. Bancos de stock, con la descripción genérica.
-    for variant in broad:
-        for name, finder in (("pexels", _pexels), ("pixabay", _pixabay)):
-            url = finder(variant, pool)
-            if not url:
-                continue
-            dest = raw_dir / f"{name}_{counter:03d}.mp4"
-            try:
-                download(url, dest, max_bytes=MAX_CLIP_BYTES)
-            except Exception as exc:
-                log.debug("  descarga fallida (%s): %s", name, exc)
-                continue
-            # Una descarga truncada puede dejar un fichero sin pista de vídeo.
-            if dest.stat().st_size > 200_000 and _has_video_stream(dest):
-                stats[name] += 1
-                log.debug("  fuente <- %s '%s'", name, variant)
-                return dest, False
-
-    # 4. Biblioteca general de vídeo de la NASA. Va la última de las fuentes de
-    #    vídeo porque es la más floja: aunque el filtro quita las ruedas de
-    #    prensa, lo que queda son piezas institucionales, no plano de recurso.
+    # 3. Biblioteca de vídeo de la NASA, con el sujeto concreto. Sube por
+    #    delante del stock: en el vídeo del agujero negro, 299 de 318 fuentes
+    #    salieron de Pexels y Pixabay y solo 8 de la NASA, y lo que llenaba la
+    #    pantalla eran fondos abstractos mientras la narración hablaba de un
+    #    cuerpo partiéndose en dos. Las piezas de la NASA son menos vistosas,
+    #    pero enseñan aquello de lo que se habla.
     for variant in specific:
         url = _nasa_video(variant, pool)
         if not url:
@@ -709,6 +704,23 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
             stats["nasa-video"] += 1
             log.debug("  fuente <- nasa-video '%s'", variant)
             return dest, False
+
+    # 4. Bancos de stock: pasan a ser el último recurso de archivo.
+    for variant in broad:
+        for name, finder in (("pexels", _pexels), ("pixabay", _pixabay)):
+            url = finder(variant, pool)
+            if not url:
+                continue
+            dest = raw_dir / f"{name}_{counter:03d}.mp4"
+            try:
+                download(url, dest, max_bytes=MAX_CLIP_BYTES)
+            except Exception as exc:
+                log.debug("  descarga fallida (%s): %s", name, exc)
+                continue
+            if dest.stat().st_size > 200_000 and _has_video_stream(dest):
+                stats[name] += 1
+                log.debug("  fuente <- %s '%s'", name, variant)
+                return dest, False
 
     # 5. Generarlo. La regla del canal es que en pantalla salga aquello de lo
     #    que habla la narración, así que antes de rendirse se fabrica el plano.

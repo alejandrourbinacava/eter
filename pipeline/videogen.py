@@ -165,6 +165,17 @@ def clip(subject: str, dest: Path, seconds: float = 8.0, seed: int = 0) -> Path 
         except Exception as exc:
             log.warning("Generación de vídeo fallida (%s), se prueba con imagen", exc)
 
+    # Sin clave de DeepInfra esto genera una IMAGEN y le pone un empuje de
+    # cámara. Enseña el sujeto correcto, pero es una foto animada, y con
+    # CLIPS_ONLY el canal pidió justo lo contrario: en el último vídeo se
+    # colaron once planos así. Con la clave puesta no se llega hasta aquí.
+    if config.CLIPS_ONLY:
+        log.warning(
+            "Sin DEEPINFRA_API_KEY no hay generación de vídeo real; el plano de "
+            "'%s' se queda sin generar en vez de meter una imagen animada",
+            subject[:48])
+        return None
+
     image = dest.with_suffix(".jpg")
     if _pollinations(subject, image, seed):
         log.info("Plano generado a partir de imagen de IA: %s", subject[:48])
