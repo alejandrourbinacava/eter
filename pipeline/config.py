@@ -66,7 +66,16 @@ SCENE_GAP = 0.45
 # Guion
 # --------------------------------------------------------------------------
 
+# El guion ES el producto: el ritmo, la tensión y que no suene a plantilla es
+# donde se nota el modelo. Aquí no se ahorra.
 SCRIPT_MODEL = os.getenv("ETER_SCRIPT_MODEL", "claude-opus-5")
+
+# El plan de producción es otra cosa: rellenar un JSON con título, etiquetas y
+# consultas de búsqueda. Trabajo mecánico y acotado, con el guion ya escrito
+# delante. Medido sobre una producción real, las dos llamadas gastan unos 9k
+# tokens de entrada y 7k de salida; pasar solo esta a Sonnet baja el coste
+# mensual de unos 6 € a unos 4 sin tocar la calidad de la narración.
+PLAN_MODEL = os.getenv("ETER_PLAN_MODEL", "claude-sonnet-5")
 
 # Objetivo de duración. Los vídeos reales del canal miden 13-15 min.
 TARGET_MINUTES = float(os.getenv("ETER_TARGET_MINUTES", "14"))

@@ -108,7 +108,7 @@ Devuelve un array JSON de objetos con exactamente estas claves:
 
     log.info("Reponiendo la cola de temas (%d nuevos)", count)
     resp = client().messages.create(
-        model=config.SCRIPT_MODEL,
+        model=config.PLAN_MODEL,
         max_tokens=4000,
         system=REPLENISH_SYSTEM,
         messages=[{"role": "user", "content": prompt}],

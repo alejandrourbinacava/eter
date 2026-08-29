@@ -258,9 +258,9 @@ Reglas de los planos:
 - Material real de archivo espacial o render fotorrealista. Nunca diagramas, \
 nunca texto en pantalla, nunca personas hablando a cámara."""
 
-    log.info("Planificando %d planos y metadatos", len(blocks))
+    log.info("Planificando %d planos y metadatos (%s)", len(blocks), config.PLAN_MODEL)
     resp = client().messages.create(
-        model=config.SCRIPT_MODEL,
+        model=config.PLAN_MODEL,
         max_tokens=16000,
         system=PLAN_SYSTEM,
         messages=[{"role": "user", "content": prompt}],
