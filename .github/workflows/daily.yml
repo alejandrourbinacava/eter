@@ -35,6 +35,9 @@ on:
       minutes:
         description: "Duración objetivo en minutos"
         default: "14"
+      tema:
+        description: "Rehacer un tema concreto (índice en topics.yml). Vacío = el siguiente"
+        default: ""
 
 # Nunca dos renders a la vez: compartirían cuota de API y historial.
 concurrency:
@@ -139,7 +142,9 @@ jobs:
           else                                            MODO="--no-upload"
           fi
           echo "Modo: ${MODO:-subir a YouTube}"
-          python -m pipeline.run $MODO
+          TEMA=""
+          if [ -n "${{ inputs.tema }}" ]; then TEMA="--topic ${{ inputs.tema }}"; fi
+          python -m pipeline.run $MODO $TEMA
 
       - name: Espacio restante
         if: always() && steps.hora.outputs.sigue == 'si'

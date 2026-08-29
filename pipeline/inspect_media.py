@@ -195,6 +195,43 @@ MIN_MOTION = 2.0
 MIN_SOURCE_MOTION = 5.0
 
 
+
+# --------------------------------------------------------------------------
+# Movimiento percibido
+# --------------------------------------------------------------------------
+# El ojo juzga el movimiento entre fotogramas contiguos, no entre instantes
+# separados por segundos. Medir cada 3 s daba por bueno metraje que deriva
+# lentísimo: acumula diferencia suficiente en 3 s y pasa el filtro, pero en
+# pantalla se ve como una foto. Medido sobre el vídeo del agujero negro, el 44 %
+# del montaje tenía movimiento casi nulo pese a estar hecho solo de clips.
+#
+# Escala: diferencia media de luminancia entre fotogramas separados 0,5 s.
+MOTION_FPS = 2.0
+MIN_PERCEIVED = 2.5   # mediana del clip; por debajo, es una foto con ruido
+DEAD_WINDOW = 1.5     # tramo concreto sin vida aunque el clip sí se mueva
+
+
+def perceived_motion(video: Path, duration: float) -> tuple[float, list[float]]:
+    """(mediana, serie) del movimiento percibido, muestreado a MOTION_FPS."""
+    import statistics
+
+    if duration <= 0:
+        return 99.0, []
+    with tempfile.TemporaryDirectory(prefix="eter_mov_") as tmp:
+        out = Path(tmp)
+        try:
+            ffmpeg(["-i", str(video),
+                    "-vf", f"fps={MOTION_FPS},scale=160:90,format=gray",
+                    "-frames:v", "600", str(out / "m%04d.png")])
+        except RuntimeError:
+            return 99.0, []
+        marcos = sorted(out.glob("m*.png"))
+        if len(marcos) < 3:
+            return 99.0, []
+        serie = [_difference(marcos[i], marcos[i + 1]) for i in range(len(marcos) - 1)]
+    return statistics.median(serie), serie
+
+
 def clean_windows(video: Path, duration: float, min_len: float,
                   strict: bool = True) -> list[list[float]]:
     """Devuelve los intervalos [inicio, fin] del clip que son utilizables.
@@ -225,19 +262,20 @@ def clean_windows(video: Path, duration: float, min_len: float,
 
         # Y además tiene que MOVERSE: un clip congelado es una imagen
         # disfrazada, y el canal pidió clips.
-        difs = [_difference(frames[i], frames[i + 1]) for i in range(len(frames) - 1)]
-        if difs:
-            import statistics
-
-            central = statistics.median(difs)
-            if central < MIN_SOURCE_MOTION:
-                log.debug("  %s descartado por quieto (mediana %.1f)",
-                          video.name[:36], central)
-                return []
-            # Y dentro de un clip que sí se mueve, los tramos parados tampoco.
-            for i, d in enumerate(difs):
-                if d < MIN_MOTION:
-                    verdicts[i] = False
+        # Movimiento como lo percibe el ojo, no acumulado en segundos.
+        central, serie = perceived_motion(video, duration)
+        if central < MIN_PERCEIVED:
+            log.debug("  %s descartado por quieto (percibido %.1f)",
+                      video.name[:36], central)
+            return []
+        # Y dentro de un clip que sí se mueve, los tramos muertos tampoco.
+        # La serie va a MOTION_FPS y los veredictos a 1/SAMPLE_EVERY, así que
+        # cada veredicto agrupa los tramos que caen en su bucket.
+        por_bucket = max(int(SAMPLE_EVERY * MOTION_FPS), 1)
+        for i in range(len(verdicts)):
+            tramo = serie[i * por_bucket:(i + 1) * por_bucket]
+            if tramo and max(tramo) < DEAD_WINDOW:
+                verdicts[i] = False
 
     # Cada veredicto cubre su bucket de SAMPLE_EVERY segundos.
     windows: list[list[float]] = []

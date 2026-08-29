@@ -435,39 +435,27 @@ MAX_DURATION_DRIFT = 0.35
 # fuente no basta: un clip puede moverse de media y aun así el trozo de cinco
 # segundos que se corta estar parado. Esta es la única medida que mira lo que
 # de verdad va a ver el espectador.
-MIN_SHOT_MOTION = 3.0
+# En la escala de movimiento percibido (ver inspect_media), no en la
+# antigua de primer-contra-último fotograma.
+MIN_SHOT_MOTION = 2.0
 
 
 def shot_motion(path: Path) -> float:
-    """Diferencia entre el primer y el último fotograma del plano."""
-    import subprocess
-    import tempfile
+    """Movimiento percibido del plano ya renderizado.
 
-    try:
-        from PIL import Image, ImageChops
-    except ImportError:
-        return 99.0
+    Antes comparaba el primer fotograma con el último, que mide el
+    desplazamiento total del plano y no lo que ve el ojo: un plano que deriva
+    lentísimo de un extremo a otro puntuaba alto y en pantalla parecía una
+    foto. Ahora es la mediana de las diferencias entre fotogramas separados
+    medio segundo, la misma escala que usa inspect_media.
+    """
+    from . import inspect_media
 
     duracion = probe_duration(path)
     if duracion < 1:
         return 0.0
-
-    with tempfile.TemporaryDirectory(prefix="eter_mov_") as tmp:
-        marcos = []
-        for i, t in enumerate((0.4, max(duracion - 0.4, 0.6))):
-            f = Path(tmp) / f"m{i}.png"
-            subprocess.run(
-                ["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}",
-                 "-i", str(path), "-frames:v", "1", "-vf", "scale=160:90", str(f)],
-                capture_output=True,
-            )
-            if not f.exists():
-                return 99.0
-            marcos.append(Image.open(f).convert("L").copy())
-        hist = ImageChops.difference(*marcos).histogram()
-
-    total = sum(hist)
-    return sum(i * n for i, n in enumerate(hist)) / total if total else 0.0
+    central, _ = inspect_media.perceived_motion(path, duracion)
+    return central
 
 
 def render_shot(shot: Shot, dest: Path, autocrop: str = "") -> Path:
