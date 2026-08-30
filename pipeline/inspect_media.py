@@ -38,7 +38,11 @@ from pathlib import Path
 
 from .util import ffmpeg, log
 
-SAMPLE_EVERY = 3.0  # segundos entre fotogramas muestreados
+# Un plano dura entre 3 y 6 s. Muestreando cada 3 s, un rótulo más corto que
+# eso cae entre dos muestras y nadie lo ve: así se coló en un vídeo publicado
+# un clip de la NASA con «On Sept. 13, 2015, the continuous view of the sun...»
+# quemado en pantalla. A 1 s no hay hueco donde esconderse.
+SAMPLE_EVERY = 1.0  # segundos entre fotogramas muestreados
 
 
 # --------------------------------------------------------------------------
@@ -259,6 +263,17 @@ def clean_windows(video: Path, duration: float, min_len: float,
             return [[0.0, duration]]
 
         verdicts = [frame_is_clean(f, strict=strict) for f in frames]
+
+        # El vídeo institucional que lleva rótulos suele llevarlos repartidos
+        # por toda la pieza, no en un tramo aislado: recortar la ventana sucia
+        # deja pasar los demás. Si mancha más de una de cada ocho muestras, se
+        # descarta la fuente entera.
+        if strict and len(verdicts) >= 6:
+            sucias = sum(1 for v in verdicts if not v)
+            if sucias / len(verdicts) > 0.125:
+                log.debug("  %s descartado: %d de %d muestras con rótulo",
+                          video.name[:36], sucias, len(verdicts))
+                return []
 
         # Y además tiene que MOVERSE: un clip congelado es una imagen
         # disfrazada, y el canal pidió clips.
