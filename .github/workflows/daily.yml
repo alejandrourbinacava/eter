@@ -1,7 +1,7 @@
 name: Publicación diaria
 
 on:
-  schedule:
+  # schedule:
     # Arranca a las 6:00 de Madrid, todo el año. El render tarda unos 95
     # minutos, así que el vídeo está subido en privado sobre las 7:35 y a
     # las 8 ya se puede revisar, que es lo que se pidió.
@@ -14,9 +14,11 @@ on:
     # Nunca en la hora en punto: es cuando GitHub tiene más cola y es lo
     # primero que descarta. Medido en este repo, un disparo a las 15:00 se
     # ejecutó a las 17:04.
-    - cron: "17 3 * * *"
-    - cron: "17 4 * * *"
-    - cron: "43 6 * * *"
+    # PARADO a petición del canal. Para reactivarlo, descomenta las tres
+    # líneas: vuelven a disparar a las 6:00 de Madrid todo el año.
+    # - cron: "17 3 * * *"
+    # - cron: "17 4 * * *"
+    # - cron: "43 6 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
