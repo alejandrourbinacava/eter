@@ -178,33 +178,40 @@ def render_ficha(titulo: str, linea: str, dest: Path) -> Path | None:
 def plan(scenes) -> list[tuple[float, float, str, tuple]]:
     """(inicio, fin, tipo, argumentos) de cada gráfico, en el reloj del vídeo.
 
-    Se sitúa igual que los rótulos: contra las palabras de la transcripción, y
-    si no se puede situar no se pone. Un gráfico desincronizado es peor que no
-    tener gráfico.
+    Se busca la cifra en TODA la narración de la escena, no en su frase de
+    énfasis: esa se elige por el golpe que da, no por llevar datos, y mirando
+    solo ahí un guion con seis cifras aprovechables producía cero gráficos.
+
+    Se sitúa contra las palabras de la transcripción y, si no se puede situar,
+    no se pone: un gráfico desincronizado es peor que no tenerlo.
     """
     from .sfx import _locate
+    from .util import sentences
 
     fuera: list[tuple[float, float, str, tuple]] = []
     reloj = 0.0
+    ultima = -99
     for scene in scenes:
         inicio_escena = reloj
         reloj += scene.duration + config.SCENE_GAP
 
-        if scene.index % CADA:
+        # Separación mínima entre gráficos, contada en escenas.
+        if scene.index - ultima < CADA:
             continue
-        frase = (scene.emphasis or [None])[0]
-        if not frase:
-            continue
-        par = dato_de(frase)
-        if not par:
-            continue
-        dentro = _locate(scene, frase)
-        if dentro is None:
-            continue
-        arranque = inicio_escena + dentro
-        if arranque < 0.5:
-            continue
-        fuera.append((arranque, arranque + SECONDS, "dato", par))
+
+        for frase in sentences(scene.narration or ""):
+            par = dato_de(frase)
+            if not par:
+                continue
+            dentro = _locate(scene, frase)
+            if dentro is None:
+                continue
+            arranque = inicio_escena + dentro
+            if arranque < 0.5:
+                continue
+            fuera.append((arranque, arranque + SECONDS, "dato", par))
+            ultima = scene.index
+            break
     return fuera
 
 
