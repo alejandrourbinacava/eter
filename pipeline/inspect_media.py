@@ -270,7 +270,9 @@ def clean_windows(video: Path, duration: float, min_len: float,
         # descarta la fuente entera.
         if strict and len(verdicts) >= 6:
             sucias = sum(1 for v in verdicts if not v)
-            if sucias / len(verdicts) > 0.125:
+            # Tolerancia cero: una sola muestra con rótulo basta. Una
+            # cortinilla de logo se coló con el 12,5 % anterior.
+            if sucias > 0:
                 log.debug("  %s descartado: %d de %d muestras con rótulo",
                           video.name[:36], sucias, len(verdicts))
                 return []
