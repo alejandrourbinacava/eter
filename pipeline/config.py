@@ -188,6 +188,11 @@ SFX_ENABLED = os.getenv("ETER_SFX", "1") not in ("0", "false", "no")
 
 SFX_CACHE = CACHE_DIR / "sfx"
 
+# Motion graphics: la cifra del guion, grande y entre reglas, cuando la frase
+# de remate lleva un número que merece verse. Uno de cada tres escenas como
+# mucho; si sale en todas deja de destacar. Ver motion.py.
+MOTION_ENABLED = os.getenv("ETER_MOTION", "1") not in ("0", "false", "no")
+
 # Rótulos de frase clave sobre el plano, en las mismas frases de remate que
 # llevan el golpe de sonido. Ver captions.py.
 CAPTIONS_ENABLED = os.getenv("ETER_CAPTIONS", "1") not in ("0", "false", "no")

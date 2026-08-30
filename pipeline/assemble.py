@@ -12,11 +12,14 @@ from collections import Counter
 from pathlib import Path
 
 from . import captions as captions_mod
+from . import motion as motion_mod
 from . import config
 from .util import ffmpeg, log, probe_duration
 
 
-def render(scenes, audio: Path, dest: Path, captions=None) -> Path:
+def render(scenes, audio: Path, dest: Path, captions=None, graphics=None) -> Path:
+    captions = captions or []
+    graphics = graphics or []
     clips = [Path(s.clip_path) for s in scenes]
     if not clips:
         raise RuntimeError("No hay planos que montar")
@@ -94,6 +97,15 @@ def render(scenes, audio: Path, dest: Path, captions=None) -> Path:
             captions, current, len(clips) + 1
         )
         steps.extend(caption_steps)
+
+    # Los gráficos de dato van encima de los rótulos y comparten su numeración
+    # de entradas, así que arrancan donde acaban aquéllos.
+    if graphics:
+        mg_inputs, mg_steps, current = motion_mod.overlay_filters(
+            graphics, current, len(clips) + 1 + len(captions)
+        )
+        extra_inputs += mg_inputs
+        steps.extend(mg_steps)
 
     steps.append(f"[{current}]null[vout]")
 

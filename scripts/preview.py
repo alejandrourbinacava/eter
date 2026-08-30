@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml  # noqa: E402
 
 from pipeline import assemble, captions, config, music, sfx, visuals, voice  # noqa: E402
+from pipeline import motion as motion_mod
 from pipeline.util import log, probe_duration, require_binaries, setup_logging  # noqa: E402
 from scripts.from_script import build_plan, parse_markdown, split_scenes  # noqa: E402
 
@@ -96,7 +97,8 @@ def main(argv=None) -> int:
 
     visuals.build_clips(plan.scenes, workdir)
     rotulos = captions.build(plan.scenes, workdir)
-    video = assemble.render(plan.scenes, audio, workdir / "muestra.mp4", rotulos)
+    graficos = motion_mod.build(plan.scenes, workdir)
+    video = assemble.render(plan.scenes, audio, workdir / "muestra.mp4", rotulos, graficos)
 
     # ---- diagnóstico -----------------------------------------------------
     planos = sorted((workdir / "shots").glob("*.mp4"))
