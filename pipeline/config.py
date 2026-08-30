@@ -238,6 +238,15 @@ MUSIC_PROMPT = (
 MUSIC_CACHE = CACHE_DIR / "music"
 
 # --------------------------------------------------------------------------
+# Control de calidad del montaje
+# --------------------------------------------------------------------------
+# Las heurísticas de píxeles miden texto y movimiento, pero no saben que unos
+# patines rosas no pintan nada en un documental sobre agujeros negros. Antes de
+# publicar, se le enseña al modelo una hoja de contactos del montaje terminado
+# y se le pregunta qué no pega con el tema. Ver quality.py.
+QUALITY_GATE = os.getenv("ETER_QC", "1") not in ("0", "false", "no")
+
+# --------------------------------------------------------------------------
 # Publicación
 # --------------------------------------------------------------------------
 

@@ -108,6 +108,10 @@ _reparto = inspect.getsource(visuals.build_clips)
 comprobar("la consulta específica también se busca",
           "opciones.append(especifica)" in _reparto)
 
+comprobar("el control de calidad está conectado antes de publicar",
+          "quality.exigir(" in (RAIZ / "pipeline/run.py").read_text(encoding="utf-8"),
+          "se publicaría sin que nadie mire el montaje")
+
 comprobar("el tope de reutilización no pasa del 10 %",
           "max_share: float = 0.0" in inspect.getsource(shots.ClipBank),
           "sigue permitiendo que un solo clip llene el vídeo")

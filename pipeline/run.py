@@ -17,8 +17,8 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-from . import (assemble, captions, config, imagegen, motion, music, script_gen,
-               sfx, thumbnail, topics, visuals, voice)
+from . import (assemble, captions, config, imagegen, motion, music, quality,
+               script_gen, sfx, thumbnail, topics, visuals, voice)
 from .util import log, require_binaries, setup_logging, write_json
 
 
@@ -94,6 +94,13 @@ def main(argv: list[str] | None = None) -> int:
     rotulos = captions.build(plan.scenes, workdir)
     graficos = motion.build(plan.scenes, workdir)
     video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos, graficos)
+
+    # ---- control de calidad ----------------------------------------------
+    # Última puerta antes de publicar. Las heurísticas de píxeles no saben que
+    # unos patines rosas no pintan nada en un documental sobre agujeros negros;
+    # esto sí. Si el montaje no llega al mínimo, la producción falla aquí y no
+    # sale nada, que es preferible a publicarlo y enterarse después.
+    quality.exigir(video, plan.title or topic["title_hint"], workdir)
 
     # ---- miniatura -------------------------------------------------------
     hero = _pick_hero(plan, workdir, video)
