@@ -64,8 +64,23 @@ def render(scenes, audio: Path, dest: Path, captions=None) -> Path:
     # Un viñeteado muy leve y una entrada/salida a negro: es lo que separa
     # visualmente un montaje automático de uno que parece dirigido.
     total = offset + lengths[-1]
+    grade = ""
+    if config.GRADE_ENABLED:
+        grade = (
+            # Negros levantados y blancos contenidos: la curva de cine, que
+            # quita el aspecto de vídeo crudo.
+            "curves=all='0/0.025 0.25/0.22 0.5/0.5 0.75/0.78 1/0.97',"
+            # Sombras frías y luces cálidas, el contraste de color que usa
+            # todo el documental de divulgación.
+            "colorbalance=rs=-0.05:gs=-0.01:bs=0.07:rm=0.02:bm=-0.02:"
+            "rh=0.05:gh=0.01:bh=-0.04,"
+            "eq=contrast=1.07:saturation=1.10:gamma=0.98,"
+        )
+        if config.GRAIN > 0:
+            grade += f"noise=alls={config.GRAIN:.0f}:allf=t+u,"
+
     steps.append(
-        f"[{current}]vignette=angle=PI/6,"
+        f"[{current}]{grade}vignette=angle=PI/5,"
         f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[base]"
     )
     current = "base"

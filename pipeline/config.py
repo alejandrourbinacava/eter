@@ -129,6 +129,22 @@ PRUNE = os.getenv("ETER_PRUNE", "1" if os.getenv("CI") else "0") not in ("0", "f
 SHOT_RHYTHM = (5.5, 3.6, 4.8, 6.0, 3.2, 5.0, 4.2, 5.8, 3.8, 4.5)
 
 # --------------------------------------------------------------------------
+# Etalonaje
+# --------------------------------------------------------------------------
+# El montaje mezcla material de seis procedencias distintas —SVS de la NASA,
+# vídeo institucional, bancos de stock, clips propios, generación por IA— y
+# cada una llega con su propio contraste y su propia temperatura. Sin una capa
+# final que los iguale se nota el remiendo en cada corte.
+#
+# Es lo mismo que hace un colorista: negros levantados, blancos contenidos,
+# frío en las sombras y calor en las luces, y un grano finísimo por encima que
+# disimula el salto de compresión entre fuentes.
+GRADE_ENABLED = os.getenv("ETER_GRADE", "1") not in ("0", "false", "no")
+
+# Intensidad del grano. A 0 se quita. Por encima de 12 se ve como ruido.
+GRAIN = float(os.getenv("ETER_GRAIN", "7"))
+
+# --------------------------------------------------------------------------
 # Música
 # --------------------------------------------------------------------------
 
