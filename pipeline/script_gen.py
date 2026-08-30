@@ -255,6 +255,19 @@ Reglas de los planos:
 - Las cuatro "visual_generic" son de ESE bloque y solo de ese. Es el error que
   hay que evitar por encima de todo: si repites la misma lista en varios
   bloques, el vídeo entero se monta con cuatro clips repetidos cien veces.
+- TODA "visual_generic" tiene que describir algo del espacio o de un cuerpo
+  celeste. Aunque el bloque hable de un cuerpo humano, de átomos, de un
+  laboratorio o del paso del tiempo, la búsqueda se plantea en el espacio.
+  Es un canal de documental espacial y los bancos de vídeo son literales: si
+  pides "human body cells" te devuelven glóbulos rojos de archivo médico, y si
+  pides "laboratory experiment" te devuelven una científica con tubos de
+  ensayo. Los dos han salido ya en un vídeo sobre agujeros negros.
+    mal: "human body cells", "laboratory experiment", "passage of time",
+         "ocean waves", "autumn trees"
+    bien: "astronaut floating in space", "cosmic dust cloud", "star field
+         drifting", "planet surface from orbit"
+  La única excepción es que el bloque nombre expresamente la Tierra o un
+  paisaje terrestre: entonces sí vale un plano de la Tierra.
 - Material real de archivo espacial o render fotorrealista. Nunca diagramas, \
 nunca texto en pantalla, nunca personas hablando a cámara."""
 

@@ -175,6 +175,12 @@ _REJECT_WORDS = {
     "fractal", "kaleidoscope", "mandala", "psychedelic", "screensaver",
     "wallpaper", "gradient", "ink", "paint", "splash", "water drop", "bubble",
     "smoke", "wave", "ocean", "sea", "underwater",
+    # archivo médico y de laboratorio: sale en cuanto el guion habla del cuerpo
+    "medical", "anatomy", "blood", "cells", "cell", "heart", "artery",
+    "skeleton", "surgery", "hospital", "laboratory", "lab", "microscope",
+    "test tube", "syringe", "dna helix", "virus", "bacteria", "x-ray",
+    # ocio y deporte, que entra por consultas sobre movimiento y velocidad
+    "skate", "skating", "bicycle", "running", "gym", "yoga", "dance",
     # bichos y gente
     "woodpecker", "bird", "hamster", "dog", "cat", "fish", "jellyfish", "shark",
     "turtle", "whale", "stingray", "crab", "coral", "reef", "seal", "lion",
