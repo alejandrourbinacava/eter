@@ -52,3 +52,33 @@ Los ficheros de vídeo están en `.gitignore`. Si quieres que el runner de GitHu
 los vea, tienes dos opciones: subirlos con `git lfs track "library/**/*.mp4"`,
 o alojarlos en almacenamiento externo y sincronizarlos en el workflow antes del
 render.
+
+## De dónde sacar metraje bueno y legal
+
+Por orden de calidad para este canal:
+
+**Dominio público — uso comercial libre, sin atribución obligatoria**
+
+- NASA SVS: `svs.gsfc.nasa.gov` — visualizaciones científicas puras, sin
+  rótulos. Muchas duran entre 30 y 90 s, así que de un activo salen diez o
+  quince planos. El pipeline ya las busca solo.
+- Canales de YouTube de NASA, NASA Goddard y NASA JPL.
+- `images.nasa.gov` — la biblioteca general, con vídeo.
+
+**Creative Commons — comprueba la licencia de cada pieza**
+
+- ESA / Hubble (`esahubble.org`), ESO (`eso.org`), Webb (`webbtelescope.org`).
+- En YouTube: Buscar -> Filtros -> Licencia -> **Creative Commons**.
+
+**Lo que NO vale**
+
+Metraje con copyright de otros canales, por bueno que sea. Un canal que
+monetiza con material ajeno se come strikes y desmonetización: es el riesgo
+más caro del proyecto, y no lo compensa ningún plano.
+
+## Requisitos técnicos
+
+- MP4, MOV, WEBM o M4V; 1080p o más.
+- Que **se mueva**: el filtro de movimiento percibido descarta lo que esté
+  casi quieto, venga de donde venga.
+- Sin rótulos, sin logotipos, sin presentador a cámara.

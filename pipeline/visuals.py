@@ -399,7 +399,11 @@ _SVS_API = "https://svs.gsfc.nasa.gov/api"
 # mapamundi con puntos y un diagrama orbital rotulado. El SVS deja de ser fuente
 # de volumen (los bancos aportan más de 190 clips por vídeo) y pasa a ser fuente
 # de precisión para lo que solo existe en el archivo científico.
-_SVS_TYPES = {"Animation"}
+# El comentario de _svs() siempre dijo que Visualization y Animation son CGI
+# científico puro, pero el conjunto solo llevaba Animation: de los seis
+# resultados aprovechables que devuelve la API para "black hole" se tiraban
+# cinco. Es la mejor fuente del canal y estaba estrangulada.
+_SVS_TYPES = {"Animation", "Visualization"}
 
 # El grueso de lo que el SVS etiqueta como «Visualization» son productos de
 # DATOS, no metraje: «ICESat-2 Land Ice Height Change (2020-2025)», «GRACE and
