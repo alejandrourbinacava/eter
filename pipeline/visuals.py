@@ -178,6 +178,14 @@ _REJECT_WORDS = {
     # "ocean", "sea" y "wave" NO entran aquí: los planos legítimos de la
     # Tierra desde órbita los llevan en las etiquetas y se caían con ellos.
     # Las playas ya las corta "beach", que está más abajo.
+    # gráficos de tecnología y química, que Pexels vende como «space background»
+    # y por eso no los cazaba «abstract»: esferas doradas unidas por líneas,
+    # retículas de partículas, estelas de luz. Tres de los cinco planos que el
+    # control tumbó en el último montaje eran de esta familia.
+    "molecule", "molecular", "atom structure", "network", "connection",
+    "technology", "digital", "data flow", "circuit", "hologram", "hud",
+    "futuristic background", "sci-fi background", "energy background",
+    "light streaks", "light trails", "glowing spheres", "polygon", "mesh",
     # casa y limpieza. Entraron por «dust trail in vacuum»: el guion pedía polvo
     # a la deriva en el vacío y el banco devolvió una aspiradora sobre una
     # alfombra, que además venía etiquetada con «dust» y por ahí coló.
