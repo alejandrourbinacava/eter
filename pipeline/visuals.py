@@ -174,7 +174,16 @@ _REJECT_WORDS = {
     "particles", "confetti", "glitter", "neon", "disco", "club", "party",
     "fractal", "kaleidoscope", "mandala", "psychedelic", "screensaver",
     "wallpaper", "gradient", "ink", "paint", "splash", "water drop", "bubble",
-    "smoke", "wave", "ocean", "sea", "underwater",
+    "smoke", "underwater", "surf", "shore", "swimming pool",
+    # "ocean", "sea" y "wave" NO entran aquí: los planos legítimos de la
+    # Tierra desde órbita los llevan en las etiquetas y se caían con ellos.
+    # Las playas ya las corta "beach", que está más abajo.
+    # comida y objetos de estudio: entran por consultas sobre materia y densidad
+    "coffee", "beans", "grain", "grains", "wheat", "rice", "sugar", "salt",
+    "food", "kitchen", "cooking", "fruit", "vegetable",
+    # arquitectura y objetos fabricados
+    "building", "architecture", "warehouse", "container", "cubes", "boxes",
+    "wall", "concrete", "brick", "floor", "stairs", "corridor", "factory",
     # archivo médico y de laboratorio: sale en cuanto el guion habla del cuerpo
     "medical", "anatomy", "blood", "cells", "cell", "heart", "artery",
     "skeleton", "surgery", "hospital", "laboratory", "lab", "microscope",

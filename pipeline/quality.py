@@ -32,8 +32,11 @@ REJILLA = "6x4"
 ANCHO = 320
 
 # Por encima de este porcentaje de fotogramas fuera de tema, el vídeo no sale.
-# Con 24 muestras, 20 % son cinco. Un montaje sano baja del 8 %.
-TOPE = 20.0
+# Con 24 muestras, 12 % son tres. Se empezó en 20 y el primer montaje que pasó
+# por aquí sacó un 17 %: el portero acertó —señaló unos granos de café, unos
+# cubos azules y una pared agrietada— pero el listón le dejaba pasar. Tres
+# fotogramas malos de veinticuatro ya se notan viendo el vídeo.
+TOPE = 12.0
 
 SYSTEM = """Eres el control de calidad de Éter, un canal de documentales \
 espaciales. Miras hojas de contactos de un montaje ya terminado y señalas los \
