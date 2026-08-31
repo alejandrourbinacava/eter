@@ -238,6 +238,15 @@ MUSIC_PROMPT = (
 MUSIC_CACHE = CACHE_DIR / "music"
 
 # --------------------------------------------------------------------------
+# Renderizado propio
+# --------------------------------------------------------------------------
+# Los bancos gratuitos no tienen astronomía: para «disco de acreción» devuelven
+# fondos abstractos y para «polvo en el vacío», una aspiradora. Un agujero negro
+# o la luz curvándose alrededor de una masa no hace falta buscarlos, porque son
+# física conocida. Ver render3d.py.
+RENDER3D = os.getenv("ETER_RENDER3D", "1") not in ("0", "false", "no")
+
+# --------------------------------------------------------------------------
 # Control de calidad del montaje
 # --------------------------------------------------------------------------
 # Las heurísticas de píxeles miden texto y movimiento, pero no saben que unos

@@ -165,6 +165,13 @@ _TEXTURE_WORDS = {
 }
 
 # Señales de que el clip no es un plano de recurso, pase lo que pase.
+# Consultas que se resuelven renderizando en vez de buscando.
+_LENTE_WORDS = ("gravitational lens", "lensing", "light bending", "bending light",
+                "spacetime curvature", "warped spacetime", "curved space",
+                "einstein ring", "light beam bending")
+_AGUJERO_WORDS = ("black hole", "accretion disk", "event horizon",
+                  "supermassive black", "rotating black")
+
 _REJECT_WORDS = {
     # Relleno abstracto de banco de stock. Es lo peor que devuelven Pexels y
     # Pixabay para consultas de espacio: fondos de vídeo, bucles de partículas,
@@ -719,6 +726,40 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
             log.debug("  fuente <- svs '%s'", variant)
             return dest, False
 
+    # 2b. Renderizado aquí mismo. Para los mecanismos que el archivo nunca
+    #     tiene —la luz curvándose alrededor de una masa, un agujero negro con
+    #     su disco— no hace falta buscar: es física conocida y se calcula.
+    #     Ver render3d.py. Va antes que el stock porque siempre es mejor que
+    #     lo que devuelven los bancos para estas consultas.
+    if config.RENDER3D:
+        from . import render3d
+
+        texto = " ".join(specific + broad).lower()
+        if any(p in texto for p in _LENTE_WORDS):
+            dest = raw_dir / f"render_{counter:03d}.mp4"
+            try:
+                hecho = render3d.diagrama_lente(dest, seconds=9.0, semilla=counter)
+            except Exception as exc:  # noqa: BLE001
+                log.debug("  render de diagrama fallido: %s", exc)
+                hecho = None
+            if hecho:
+                stats["render3d"] = stats.get("render3d", 0) + 1
+                log.info("  fuente <- render propio 'diagrama de lente'")
+                return dest, False
+        if any(p in texto for p in _AGUJERO_WORDS):
+            dest = raw_dir / f"render_{counter:03d}.mp4"
+            try:
+                hecho = render3d.agujero_negro(
+                    dest, seconds=9.0, inclinacion=14.0 + (counter % 5) * 3,
+                    semilla=counter)
+            except Exception as exc:  # noqa: BLE001
+                log.debug("  render de agujero negro fallido: %s", exc)
+                hecho = None
+            if hecho:
+                stats["render3d"] = stats.get("render3d", 0) + 1
+                log.info("  fuente <- render propio 'agujero negro'")
+                return dest, False
+
     # 3. Bancos de stock, con la descripción genérica.
     for variant in broad:
         for name, finder in (("pexels", _pexels), ("pixabay", _pixabay)):
@@ -810,7 +851,7 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         d.mkdir(parents=True, exist_ok=True)
 
     stats = {"biblioteca": 0, "pexels": 0, "pixabay": 0, "svs": 0,
-             "nasa-video": 0, "generado": 0, "nasa-imagen": 0}
+             "nasa-video": 0, "generado": 0, "nasa-imagen": 0, "render3d": 0}
 
     if library_index():
         log.info("Biblioteca local: %d clips propios disponibles", len(library_index()))
