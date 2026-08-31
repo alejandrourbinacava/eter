@@ -37,7 +37,7 @@ SLIDE = 0.45
 
 # Como mucho uno de cada tantas escenas: si aparece en todas deja de destacar
 # y pasa a ser decorado.
-CADA = 3
+CADA = 2
 
 _UNIDADES = (
     "años luz", "años", "kilómetros", "km", "metros", "grados", "veces",
@@ -189,12 +189,34 @@ def render_ficha(titulo: str, linea: str, dest: Path) -> Path | None:
 # --------------------------------------------------------------------------
 
 
+_OBJETO = re.compile(
+    r"\b(Sagitario A\*?|Sagittarius A\*?|Cygnus X-1|M87|TON 618|"
+    r"Vía Láctea|Andrómeda|Betelgeuse|Proxima Centauri|Alfa Centauri|"
+    r"Voyager \d|Hubble|James Webb|Encélado|Europa|Titán|Ío|Ganímedes|"
+    r"RX J\d[\w.\-−]*|PSR [\w.+\-]+|SS 433|V404 Cygni|GW\d{6})\b")
+
+
+def objeto_de(frase: str) -> tuple[str, str] | None:
+    """(nombre, contexto) si la frase nombra un objeto astronómico propio."""
+    m = _OBJETO.search(frase)
+    if not m:
+        return None
+    nombre = m.group(1)
+    # La propia frase, recortada, hace de línea de contexto.
+    resto = _limpio(frase.replace(nombre, "").strip(" ,.;:—-"))
+    return nombre, resto[:58]
+
+
 def plan(scenes) -> list[tuple[float, float, str, tuple]]:
     """(inicio, fin, tipo, argumentos) de cada gráfico, en el reloj del vídeo.
 
-    Se busca la cifra en TODA la narración de la escena, no en su frase de
-    énfasis: esa se elige por el golpe que da, no por llevar datos, y mirando
-    solo ahí un guion con seis cifras aprovechables producía cero gráficos.
+    Dos tipos, y se alternan para que no canse siempre el mismo recurso:
+    la cifra grande cuando la escena trae un número, y la ficha de objeto
+    cuando nombra algo con nombre propio.
+
+    Se busca en TODA la narración de la escena, no en su frase de énfasis: esa
+    se elige por el golpe que da, no por llevar datos, y mirando solo ahí un
+    guion con seis cifras aprovechables producía cero gráficos.
 
     Se sitúa contra las palabras de la transcripción y, si no se puede situar,
     no se pone: un gráfico desincronizado es peor que no tenerlo.
@@ -205,27 +227,35 @@ def plan(scenes) -> list[tuple[float, float, str, tuple]]:
     fuera: list[tuple[float, float, str, tuple]] = []
     reloj = 0.0
     ultima = -99
+    ultimo_tipo = ""
     for scene in scenes:
         inicio_escena = reloj
         reloj += scene.duration + config.SCENE_GAP
 
-        # Separación mínima entre gráficos, contada en escenas.
         if scene.index - ultima < CADA:
             continue
 
         for frase in sentences(scene.narration or ""):
-            par = dato_de(frase)
-            if not par:
-                continue
-            dentro = _locate(scene, frase)
-            if dentro is None:
-                continue
-            arranque = inicio_escena + dentro
-            if arranque < 0.5:
-                continue
-            fuera.append((arranque, arranque + SECONDS, "dato", par))
-            ultima = scene.index
-            break
+            # Se prueba primero el tipo que NO se usó la vez anterior.
+            orden = [("ficha", objeto_de), ("dato", dato_de)]
+            if ultimo_tipo == "ficha":
+                orden.reverse()
+
+            for tipo, extractor in orden:
+                par = extractor(frase)
+                if not par:
+                    continue
+                dentro = _locate(scene, frase)
+                if dentro is None:
+                    continue
+                arranque = inicio_escena + dentro
+                if arranque < 0.5:
+                    continue
+                fuera.append((arranque, arranque + SECONDS, tipo, par))
+                ultima, ultimo_tipo = scene.index, tipo
+                break
+            if ultima == scene.index:
+                break
     return fuera
 
 

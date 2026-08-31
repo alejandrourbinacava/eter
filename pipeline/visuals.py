@@ -178,6 +178,12 @@ _REJECT_WORDS = {
     # "ocean", "sea" y "wave" NO entran aquí: los planos legítimos de la
     # Tierra desde órbita los llevan en las etiquetas y se caían con ellos.
     # Las playas ya las corta "beach", que está más abajo.
+    # casa y limpieza. Entraron por «dust trail in vacuum»: el guion pedía polvo
+    # a la deriva en el vacío y el banco devolvió una aspiradora sobre una
+    # alfombra, que además venía etiquetada con «dust» y por ahí coló.
+    "vacuum cleaner", "hoover", "cleaning", "carpet", "housework", "appliance",
+    "broom", "mop", "laundry", "furniture", "sofa", "curtain", "bedroom",
+    "living room", "home", "household", "domestic", "toy",
     # comida y objetos de estudio: entran por consultas sobre materia y densidad
     "coffee", "beans", "grain", "grains", "wheat", "rice", "sugar", "salt",
     "food", "kitchen", "cooking", "fruit", "vegetable",

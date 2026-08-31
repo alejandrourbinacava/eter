@@ -268,6 +268,12 @@ Reglas de los planos:
          drifting", "planet surface from orbit"
   La única excepción es que el bloque nombre expresamente la Tierra o un
   paisaje terrestre: entonces sí vale un plano de la Tierra.
+- Evita las palabras que en inglés corriente significan otra cosa, porque los
+  bancos las leen en su sentido doméstico. "vacuum" devuelve una aspiradora,
+  no el vacío del espacio; ya salió una sobre una alfombra en un vídeo. Lo
+  mismo con "cloud" (informática), "wave" (playa), "star" (famoso), "space"
+  (habitación), "matter" (asunto), "field" (campo de cultivo) y "current"
+  (actualidad). Di "empty space", "cosmic dust", "stellar" o "orbital".
 - Material real de archivo espacial o render fotorrealista. Nunca diagramas, \
 nunca texto en pantalla, nunca personas hablando a cámara."""
 
