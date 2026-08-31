@@ -49,7 +49,8 @@ import random
 import re
 from pathlib import Path
 
-from . import config, inspect_media, shots
+from . import config
+from . import quality, inspect_media, shots
 from .util import download, ffmpeg, http, log, probe_duration, probe_streams
 
 # Los MP4 originales de la NASA llegan a 1,7 GB. Se corta la descarga.
@@ -842,6 +843,15 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         lambda q: _fetch_source(subjects.get(q, q), q, pool, raw_dir, stats)
     )
     bank.set_total_shots(len(plan))
+
+    # Cada clip descargado pasa por la vista del modelo antes de repartir
+    # planos. Es lo único que ha funcionado contra la basura que los bancos
+    # etiquetan mal: un cartel de «prohibido el paso», una microscopía, una
+    # ciudad poligonal morada. Ninguna lista de palabras las caza.
+    tema = getattr(scenes[0], "topic_title", "") if scenes else ""
+    if not tema:
+        tema = (scenes[0].visual_query if scenes else "") or "documental espacial"
+    bank.set_screen(lambda rutas: quality.criba(rutas, tema, workdir))
 
     log.info("Montaje: %d planos de %.0f-%.0f s para %d escenas, %d búsquedas distintas",
              len(plan), config.SHOT_MIN, config.SHOT_MAX, len(scenes), len(subjects))

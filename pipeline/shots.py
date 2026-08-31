@@ -112,6 +112,32 @@ class ClipBank:
     # Con 0.22 un solo clip podía cubrir 42 planos de 194. Medido en el vídeo
     # de la estrella de neutrones: el más repetido salía 23 veces y ni
     # siquiera rozaba el tope. Con 0.06 son 11 de 194.
+    def set_screen(self, screen) -> None:
+        """screen(list[Path]) -> set[int]: índices que no pegan con el tema.
+
+        Las fuentes se acumulan y, cada TANDA, se miran todas de una vez antes
+        de que ninguna reparta planos. Mirar el vídeo terminado llegaba tarde:
+        rechazaba dos horas de trabajo sin arreglar nada.
+        """
+        self._screen = screen
+
+    def _criba_pendientes(self, forzar: bool = False) -> None:
+        from . import quality
+
+        if not self._screen or not self._pendientes:
+            return
+        if not forzar and len(self._pendientes) < quality.TANDA:
+            return
+        lote = self._pendientes[:quality.TANDA] if not forzar else self._pendientes
+        fuera = self._screen([s.path for s in lote])
+        for i, fuente in enumerate(lote):
+            if i in fuera:
+                self._all.remove(fuente) if fuente in self._all else None
+                for lista in self._by_query.values():
+                    if fuente in lista:
+                        lista.remove(fuente)
+        self._pendientes = self._pendientes[len(lote):]
+
     def __init__(self, fetch, max_share: float = 0.06) -> None:
         # fetch(query) -> (Path, is_image) | None
         self._fetch = fetch
@@ -122,6 +148,8 @@ class ClipBank:
         self._budget: dict[int, int] = {}
         self._total_shots = 0
         self._last: Source | None = None
+        self._screen = None
+        self._pendientes: list[Source] = []
 
     def set_total_shots(self, total: int) -> None:
         """Fija cuántos planos hay que servir, para calcular el tope."""
@@ -162,6 +190,11 @@ class ClipBank:
         )
         self._by_query.setdefault(query, []).append(source)
         self._all.append(source)
+        # Entra en la cola de cribado. Se mira cuando haya tanda completa, no
+        # de una en una: una llamada por clip serían casi doscientas por vídeo.
+        if self._screen is not None:
+            self._pendientes.append(source)
+            self._criba_pendientes()
         return source
 
     def _serve(self, source: Source, want: float) -> tuple[Path, float, bool] | None:

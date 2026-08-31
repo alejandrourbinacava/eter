@@ -154,3 +154,106 @@ def exigir(video: Path, tema: str, workdir: Path) -> dict:
             f"(tope {TOPE:.0f} %).\n" + "\n".join(f"  {m}" for m in v["motivos"])
         )
     return v
+
+
+# --------------------------------------------------------------------------
+# Cribado de fuentes, antes de montar
+# --------------------------------------------------------------------------
+# Mirar el vídeo terminado llega tarde: rechaza dos horas de trabajo y no
+# arregla nada. Y la lista de palabras prohibidas nunca gana, porque cada
+# montaje trae basura nueva con etiquetas distintas —un cartel holandés de
+# prohibido el paso, una microscopía, una ciudad poligonal morada—.
+#
+# Aquí se mira cada clip descargado ANTES de que entre en el montaje, en
+# tandas, con un fotograma por clip. Lo que no pega se descarta y el banco
+# busca otra cosa. Sale a una llamada por cada TANDA clips.
+
+TANDA = 12
+
+
+def _tira(videos: list[Path], dest: Path) -> tuple[Path, list[int]] | None:
+    """Rejilla con un fotograma de cada clip. Devuelve (imagen, índices).
+
+    Los índices dicen a qué clip corresponde cada casilla, porque un clip que
+    no da fotograma se salta y desplazaría la numeración.
+
+    En rejilla y no en fila: doce fotogramas en tira dan una imagen de
+    3840x270 donde cada uno queda diminuto, y probado así no reconoció una
+    aspiradora a pantalla completa. Y con `tile` sobre una secuencia de
+    imágenes, no con `xstack`, que espera coordenadas en píxeles y no índices
+    de cuadrícula: pasarle índices devuelve una imagen corrupta.
+    """
+    import tempfile as tf
+
+    with tf.TemporaryDirectory(prefix="eter_criba_") as tmp:
+        carpeta = Path(tmp)
+        indices: list[int] = []
+        for i, v in enumerate(videos):
+            f = carpeta / f"s{len(indices):03d}.png"
+            subprocess.run(
+                ["ffmpeg", "-v", "error", "-y", "-ss", "1", "-i", str(v),
+                 "-frames:v", "1", "-vf", "scale=480:270,setsar=1", str(f)],
+                capture_output=True,
+            )
+            if f.exists():
+                indices.append(i)
+        if len(indices) < 2:
+            return None
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-framerate", "1",
+             "-i", str(carpeta / "s%03d.png"),
+             "-vf", f"tile=4x{(len(indices) + 3) // 4}",
+             "-frames:v", "1", str(dest)],
+            capture_output=True,
+        )
+    if dest.exists() and dest.stat().st_size > 5_000:
+        return dest, indices
+    return None
+
+
+def criba(videos: list[Path], tema: str, workdir: Path) -> set[int]:
+    """Índices de los clips que NO pegan con el tema. Ante la duda, ninguno."""
+    if not config.QUALITY_GATE or len(videos) < 2:
+        return set()
+
+    tira = workdir / "criba.png"
+    hecho = _tira(videos, tira)
+    if hecho is None:
+        return set()
+    _, indices = hecho
+
+    datos = base64.standard_b64encode(tira.read_bytes()).decode()
+    prompt = f"""Esta rejilla son {len(indices)} fotogramas, uno por clip, numerados de 0 a {len(indices) - 1} de izquierda a derecha y de arriba abajo. Son candidatos a entrar en un documental espacial sobre: «{tema}»
+
+Di cuáles NO valen. No valen: escenas terrestres cotidianas, interiores, carteles o texto incrustado, archivo médico o de laboratorio, naturaleza de la Tierra, gráficos de tecnología o química, y fondos abstractos que no muestran ningún objeto concreto.
+
+Sí valen: cualquier objeto astronómico real o recreado, naves, satélites, astronautas, y la Tierra vista desde el espacio.
+
+Devuelve solo: {{"fuera": [números]}}"""
+
+    from .script_gen import client, texto_de
+
+    try:
+        resp = client().messages.create(
+            model=config.SCRIPT_MODEL,
+            max_tokens=400,
+            system=SYSTEM,
+            messages=[{"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64",
+                                             "media_type": "image/png",
+                                             "data": datos}},
+                {"type": "text", "text": prompt},
+            ]}],
+        )
+        crudo = re.sub(r"^```(?:json)?\s*|\s*```$", "", texto_de(resp).strip())
+        fuera = {n for n in json.loads(crudo).get("fuera", []) if isinstance(n, int)}
+    except Exception as exc:  # noqa: BLE001
+        log.debug("Criba no concluyente (%s); pasan todos", exc)
+        return set()
+
+    # Del número de casilla al número de clip.
+    fuera = {indices[n] for n in fuera if 0 <= n < len(indices)}
+    if fuera:
+        log.info("Criba: %d de %d clips descartados por no pegar con el tema",
+                 len(fuera), len(videos))
+    return fuera
