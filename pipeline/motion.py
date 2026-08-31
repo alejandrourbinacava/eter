@@ -201,10 +201,11 @@ def objeto_de(frase: str) -> tuple[str, str] | None:
     m = _OBJETO.search(frase)
     if not m:
         return None
-    nombre = m.group(1)
-    # La propia frase, recortada, hace de línea de contexto.
-    resto = _limpio(frase.replace(nombre, "").strip(" ,.;:—-"))
-    return nombre, resto[:58]
+    # Solo el nombre. Se probó a sacar de la frase una línea de contexto y no
+    # hay manera: un fragmento recortado siempre sale raro debajo del nombre
+    # —«En un objeto tan grande como * las fuerz», «no es la naturaleza de la
+    # trampa»—. El marco con el nombre a secas se lee bien siempre.
+    return m.group(1), ""
 
 
 def plan(scenes) -> list[tuple[float, float, str, tuple]]:

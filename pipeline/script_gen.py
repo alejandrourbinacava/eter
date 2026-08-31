@@ -146,6 +146,13 @@ Tema: {topic['title_hint']}
 Extensión objetivo: {config.TARGET_WORDS} palabras (margen de ±8 %).
 </encargo>{avoid_block}
 
+El montaje pone en pantalla, con tipografía grande, las cifras y los nombres propios que aparecen en el texto. Así que el guion tiene que dárselos:
+
+- Al menos SEIS cifras concretas y verificables repartidas por todo el texto,   no amontonadas en un bloque. Escritas con dígitos y con su unidad detrás:   «4,3 millones de masas solares», «26.000 años luz», «200.000 millones de   veces la gravedad terrestre». Nunca «millones de veces más» a secas ni   «muchísimo mayor»: sin número no hay gráfico.
+- Al menos TRES objetos con nombre propio, escritos como se catalogan:   Sagitario A*, M87, Cygnus X-1, TON 618, Voyager 1, Proxima Centauri,   Betelgeuse, RX J1856.5-3754. Un nombre propio ancla el dato en algo real y   es lo que separa la divulgación seria de la charla de bar.
+
+No fuerces ninguno de los dos: si el dato no viene a cuento, fuera. Pero donde el texto pida una magnitud, dala con su número, y donde pida un ejemplo, dale nombre.
+
 Escribe la narración completa. Empieza directamente por la primera frase del \
 Tiempo 1 y termina en la última frase del Tiempo 5. No escribas nada más."""
 
