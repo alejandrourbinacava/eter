@@ -137,8 +137,22 @@ def render_dato(cifra: str, unidad: str, dest: Path) -> Path | None:
                       W // 2 + regla, baja + int(cuerpo * 0.44) + 4],
                      fill=(255, 255, 255, 195))
 
+    # Velo oscuro detrás del bloque. Sin él, la cifra en blanco se pierde
+    # cuando el plano de debajo es claro: en un vídeo real, «6.500 MILLONES DE
+    # MASAS SOLARES» cayó sobre un disco de acreción brillante y no se leía.
+    # Es una banda difuminada, no un rectángulo: un borde recto se ve.
+    from PIL import ImageFilter
+
+    velo = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(velo).rectangle(
+        [W // 2 - regla - 120, y - 130,
+         W // 2 + regla + 120, baja + int(cuerpo * 0.44) + 90],
+        fill=(0, 0, 0, 150),
+    )
+    velo = velo.filter(ImageFilter.GaussianBlur(60))
+
     dest.parent.mkdir(parents=True, exist_ok=True)
-    _halo(lienzo).save(dest, "PNG")
+    Image.alpha_composite(velo, _halo(lienzo)).save(dest, "PNG")
     return dest
 
 

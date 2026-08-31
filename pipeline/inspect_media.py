@@ -211,8 +211,12 @@ MIN_SOURCE_MOTION = 5.0
 #
 # Escala: diferencia media de luminancia entre fotogramas separados 0,5 s.
 MOTION_FPS = 2.0
-MIN_PERCEIVED = 2.5   # mediana del clip; por debajo, es una foto con ruido
-DEAD_WINDOW = 1.5     # tramo concreto sin vida aunque el clip sí se mueva
+# Medido sobre montajes reales: con 2,5 quedaba un 16 % del vídeo en tramos que
+# el ojo lee como foto. Sube a 3,0. Cada vuelta de tuerca aquí descarta más
+# material, así que si aparecen planos procedurales en el registro es señal de
+# que se ha apretado de más.
+MIN_PERCEIVED = 3.0   # mediana del clip; por debajo, es una foto con ruido
+DEAD_WINDOW = 1.8     # tramo concreto sin vida aunque el clip sí se mueva
 
 
 def perceived_motion(video: Path, duration: float) -> tuple[float, list[float]]:
