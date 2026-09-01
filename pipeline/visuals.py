@@ -194,6 +194,12 @@ _REJECT_WORDS = {
     # "ocean", "sea" y "wave" NO entran aquí: los planos legítimos de la
     # Tierra desde órbita los llevan en las etiquetas y se caían con ellos.
     # Las playas ya las corta "beach", que está más abajo.
+    # objetos de oficina, obra y decoración que se colaron en el último
+    # montaje: un megáfono blanco sobre fondo blanco, una cantera con
+    # excavadoras y un mosaico de azulejos, en un vídeo sobre agujeros negros.
+    "megaphone", "loudspeaker", "speaker", "microphone", "quarry", "mining",
+    "excavator", "bulldozer", "crane", "construction", "tiles", "mosaic",
+    "pattern", "wallpaper texture", "fabric", "textile", "paper", "cardboard",
     # naturaleza y texturas terrestres que aún se colaban: musgo, arroyos,
     # nubes vistas desde el suelo, mármol líquido. Son los tres últimos
     # descartes que quedaban en un montaje por lo demás limpio.
@@ -717,6 +723,40 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
     specific = list(dict.fromkeys([q for q in (query, " ".join(query.split()[:2])) if q]))
     broad = list(dict.fromkeys([g for g in (generic, " ".join(generic.split()[:2])) if g]))
 
+    # 0. Cuota de renderizado propio. Va ANTES que todo lo demás porque si no
+    #    nunca llega a ejecutarse: la biblioteca cubre «black hole» y «lensing»
+    #    y responde primero, así que en un vídeo entero salieron cero renders
+    #    pese a estar conectados. Con una cuota corta —los primeros MAX_RENDER
+    #    planos que hablen del mecanismo— el diagrama aparece seguro sin
+    #    desplazar al archivo, que para el resto es mejor.
+    if config.RENDER3D and stats.get("render3d", 0) < config.MAX_RENDER:
+        from . import render3d
+
+        texto = " ".join(specific + broad).lower()
+        tipo = None
+        if any(p in texto for p in _LENTE_WORDS):
+            tipo = "lente"
+        elif any(p in texto for p in _AGUJERO_WORDS):
+            tipo = "agujero"
+        if tipo:
+            dest = raw_dir / f"render_{counter:03d}.mp4"
+            try:
+                if tipo == "lente":
+                    hecho = render3d.diagrama_lente(dest, seconds=9.0,
+                                                    semilla=counter)
+                    hecho = hecho[0] if isinstance(hecho, tuple) else hecho
+                else:
+                    hecho = render3d.agujero_negro(
+                        dest, seconds=9.0,
+                        inclinacion=14.0 + (counter % 5) * 3, semilla=counter)
+            except Exception as exc:  # noqa: BLE001
+                log.debug("  render propio fallido (%s): %s", tipo, exc)
+                hecho = None
+            if hecho and dest.exists():
+                stats["render3d"] = stats.get("render3d", 0) + 1
+                log.info("  fuente <- render propio '%s'", tipo)
+                return dest, False
+
     # 1. Tus propios clips: se prueban con las dos búsquedas.
     for term in specific + broad:
         own = _library(term, pool)
@@ -740,40 +780,6 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
             stats["svs"] += 1
             log.debug("  fuente <- svs '%s'", variant)
             return dest, False
-
-    # 2b. Renderizado aquí mismo. Para los mecanismos que el archivo nunca
-    #     tiene —la luz curvándose alrededor de una masa, un agujero negro con
-    #     su disco— no hace falta buscar: es física conocida y se calcula.
-    #     Ver render3d.py. Va antes que el stock porque siempre es mejor que
-    #     lo que devuelven los bancos para estas consultas.
-    if config.RENDER3D:
-        from . import render3d
-
-        texto = " ".join(specific + broad).lower()
-        if any(p in texto for p in _LENTE_WORDS):
-            dest = raw_dir / f"render_{counter:03d}.mp4"
-            try:
-                hecho = render3d.diagrama_lente(dest, seconds=9.0, semilla=counter)
-            except Exception as exc:  # noqa: BLE001
-                log.debug("  render de diagrama fallido: %s", exc)
-                hecho = None
-            if hecho:
-                stats["render3d"] = stats.get("render3d", 0) + 1
-                log.info("  fuente <- render propio 'diagrama de lente'")
-                return dest, False
-        if any(p in texto for p in _AGUJERO_WORDS):
-            dest = raw_dir / f"render_{counter:03d}.mp4"
-            try:
-                hecho = render3d.agujero_negro(
-                    dest, seconds=9.0, inclinacion=14.0 + (counter % 5) * 3,
-                    semilla=counter)
-            except Exception as exc:  # noqa: BLE001
-                log.debug("  render de agujero negro fallido: %s", exc)
-                hecho = None
-            if hecho:
-                stats["render3d"] = stats.get("render3d", 0) + 1
-                log.info("  fuente <- render propio 'agujero negro'")
-                return dest, False
 
     # 3. Bancos de stock, con la descripción genérica.
     for variant in broad:

@@ -244,6 +244,11 @@ MUSIC_CACHE = CACHE_DIR / "music"
 # fondos abstractos y para «polvo en el vacío», una aspiradora. Un agujero negro
 # o la luz curvándose alrededor de una masa no hace falta buscarlos, porque son
 # física conocida. Ver render3d.py.
+# Cuántos planos por vídeo se renderizan aquí. Pocos a propósito: el diagrama
+# y el agujero negro impresionan la primera vez y cansan a la quinta, y cada
+# uno cuesta unos minutos de CPU en el runner.
+MAX_RENDER = int(os.getenv("ETER_MAX_RENDER", "3"))
+
 RENDER3D = os.getenv("ETER_RENDER3D", "1") not in ("0", "false", "no")
 
 # --------------------------------------------------------------------------

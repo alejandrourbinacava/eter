@@ -101,10 +101,19 @@ Señala los fotogramas que NO pegan con un documental espacial sobre ese tema.
 
 Cuenta como fuera de tema:
 - Escenas terrestres cotidianas: deporte, oficinas, ciudades, gente trabajando.
+- OBJETOS de estudio o de oficina sobre fondo liso: un megáfono, un teléfono,
+  una taza, herramientas. Aunque el fondo sea negro o blanco y parezca
+  «limpio», un objeto cotidiano no pinta nada en un documental espacial.
+- Maquinaria y obra: canteras, excavadoras, grúas, fábricas.
+- Texturas y patrones planos: azulejos, mosaicos, telas, papel, mármol.
 - Archivo médico o de laboratorio: células, órganos, tubos de ensayo, batas.
 - Naturaleza de la Tierra sin relación: árboles, flores, insectos, playas.
 - Rótulos, logotipos o cortinillas de otra marca incrustados en el clip.
 - Fondos abstractos de banco de vídeo que no muestran nada concreto.
+
+Sé estricto: ante la duda de si un plano pega o no, márcalo. Es preferible
+rechazar un montaje de más que dejar pasar un megáfono en un vídeo sobre
+agujeros negros, que es lo que ocurrió en la última producción.
 
 NO cuenta como fuera de tema:
 - Planos de la Tierra vista desde el espacio.
