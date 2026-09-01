@@ -352,12 +352,19 @@ def plan(scenes) -> list[Shot]:
 # Empujes de cámara que se alternan para que dos planos seguidos no se muevan
 # igual. Un movimiento lento sobre metraje ya animado da profundidad; uno
 # rápido marea.
+# Ninguno es «flat». Un empuje plano deja el plano exactamente igual de quieto
+# que la fuente, y sobre material lento —las simulaciones de ESO son zooms
+# suavísimos— el resultado se lee como una foto: medido, un 31 % del montaje
+# quedaba en tramos sin vida pese a ser todo clips.
+#
+# El recorrido sube a un 12-14 % del encuadre. Por encima se nota el barrido y
+# marea; por debajo no basta para despegar un plano lento.
 _PUSHES = (
-    ("in", 1.00, 1.07),
-    ("out", 1.08, 1.00),
-    ("flat", 1.03, 1.03),
-    ("in", 1.02, 1.10),
-    ("out", 1.06, 1.01),
+    ("in", 1.00, 1.13),
+    ("out", 1.14, 1.00),
+    ("in", 1.03, 1.14),
+    ("out", 1.12, 1.01),
+    ("in", 1.01, 1.12),
 )
 
 
