@@ -194,6 +194,12 @@ _REJECT_WORDS = {
     # "ocean", "sea" y "wave" NO entran aquí: los planos legítimos de la
     # Tierra desde órbita los llevan en las etiquetas y se caían con ellos.
     # Las playas ya las corta "beach", que está más abajo.
+    # naturaleza y texturas terrestres que aún se colaban: musgo, arroyos,
+    # nubes vistas desde el suelo, mármol líquido. Son los tres últimos
+    # descartes que quedaban en un montaje por lo demás limpio.
+    "moss", "stream", "creek", "river", "waterfall", "rocks", "pebble",
+    "marble", "fluid art", "ink in water", "liquid", "sunset sky", "sunrise",
+    "clouds timelapse", "storm clouds", "landscape",
     # gráficos de tecnología y química, que Pexels vende como «space background»
     # y por eso no los cazaba «abstract»: esferas doradas unidas por líneas,
     # retículas de partículas, estelas de luz. Tres de los cinco planos que el

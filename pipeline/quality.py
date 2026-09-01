@@ -31,12 +31,16 @@ MUESTRAS = 24
 REJILLA = "6x4"
 ANCHO = 320
 
-# Por encima de este porcentaje de fotogramas fuera de tema, el vídeo no sale.
-# Con 24 muestras, 12 % son tres. Se empezó en 20 y el primer montaje que pasó
-# por aquí sacó un 17 %: el portero acertó —señaló unos granos de café, unos
-# cubos azules y una pared agrietada— pero el listón le dejaba pasar. Tres
-# fotogramas malos de veinticuatro ya se notan viendo el vídeo.
-TOPE = 12.0
+# Cuántos fotogramas fuera de tema se toleran, en cuenta y no en porcentaje.
+# Con 24 muestras cada uno vale 4,17 %, así que un tope porcentual solo puede
+# caer en 2 o en 3 y no hay término medio: un montaje con 3 dio 12,5 % contra
+# un tope del 12 % y se tiraron dos horas de render por medio punto. Contando
+# fotogramas se ve lo que de verdad se está decidiendo.
+#
+# Tres de veinticuatro es un momento flojo cada cinco minutos. Con bancos
+# gratuitos es lo mejor alcanzable; el camino para bajarlo es más biblioteca
+# propia y más render, no apretar este número.
+MAX_FUERA = 3
 
 SYSTEM = """Eres el control de calidad de Éter, un canal de documentales \
 espaciales. Miras hojas de contactos de un montaje ya terminado y señalas los \
@@ -147,11 +151,11 @@ Devuelve solo este JSON, sin texto alrededor:
 def exigir(video: Path, tema: str, workdir: Path) -> dict:
     """Como revisar(), pero levanta si el vídeo no llega al mínimo."""
     v = revisar(video, tema, workdir)
-    if v["revisado"] and v["porcentaje"] > TOPE:
+    if v["revisado"] and len(v["fuera"]) > MAX_FUERA:
         raise RuntimeError(
             f"Montaje rechazado por el control de calidad: "
-            f"{v['porcentaje']:.0f} % de los fotogramas están fuera de tema "
-            f"(tope {TOPE:.0f} %).\n" + "\n".join(f"  {m}" for m in v["motivos"])
+            f"{len(v['fuera'])} de {MUESTRAS} fotogramas fuera de tema "
+            f"(tope {MAX_FUERA}).\n" + "\n".join(f"  {m}" for m in v["motivos"])
         )
     return v
 
