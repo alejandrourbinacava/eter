@@ -111,6 +111,23 @@ jobs:
         if: steps.hora.outputs.sigue == 'si'
         run: pip install -r requirements.txt
 
+      - name: Traer la biblioteca de clips
+        if: steps.hora.outputs.sigue == 'si'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Los clips propios van en un release y no en el repositorio: son
+          # 145 MB y, commiteados, se quedarían en el historial de Git para
+          # siempre aunque después se borren. Así se quitan de verdad borrando
+          # el release, sin tocar nada más.
+          if gh release download biblioteca --repo "$GITHUB_REPOSITORY"                --pattern "biblioteca.zip" --dir /tmp 2>/dev/null; then
+            unzip -q -o /tmp/biblioteca.zip -d library/
+            rm -f /tmp/biblioteca.zip
+            echo "Biblioteca: $(find library -type f \( -name '*.mp4' -o -name '*.webm' -o -name '*.mkv' \) | wc -l) clips"
+          else
+            echo "Sin biblioteca publicada; se tira solo de archivo y renders."
+          fi
+
       - name: Cachear la tipografía de marca
         if: steps.hora.outputs.sigue == 'si'
         uses: actions/cache@v4
