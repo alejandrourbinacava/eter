@@ -49,8 +49,18 @@ foreach ($c in $clips) {
     Write-Host "[$n/$total] bajando $nombre ..." -ForegroundColor Cyan
     yt-dlp -q --no-warnings -f "bv*[height<=2160]+ba/bv*[height<=2160]/b" `
         -o "$destino.%(ext)s" "https://youtu.be/$($c.id)"
+    if (-not $?) {
+        # YouTube devuelve 403 tras varias descargas seguidas. Se esquiva
+        # pidiendole a yt-dlp que se identifique como la app de Android, que
+        # usa otra ruta de servidores. A cambio no ofrece los formatos mas
+        # altos, asi que este intento se conforma con 1080p.
+        Write-Host "     403; reintento como cliente Android" -ForegroundColor Yellow
+        yt-dlp -q --no-warnings --extractor-args "youtube:player_client=android" `
+            -f "bv*[height<=1080]+ba/b[height<=1080]" `
+            -o "$destino.%(ext)s" "https://youtu.be/$($c.id)"
+    }
     if ($?) { $bajados++ } else {
-        Write-Host "     fallo con $($c.id)" -ForegroundColor Yellow
+        Write-Host "     fallo con $($c.id)" -ForegroundColor Red
     }
 }
 
