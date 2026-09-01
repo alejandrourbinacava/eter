@@ -112,22 +112,48 @@ def library_index() -> list[tuple[Path, set[str]]]:
     return index
 
 
+# Cuántas veces puede servir el mismo clip propio. Antes era una sola —el pool
+# lo marcaba como usado y no volvía— así que doce clips daban doce planos de
+# ciento ochenta y cinco, un 4 % del montaje, pese a durar cada uno entre veinte
+# y cincuenta segundos. El resto lo llenaban los bancos, que es de donde sale
+# toda la basura que rechaza el control.
+#
+# Ocho por clip y doce clips cubren noventa y seis planos, más de la mitad del
+# vídeo. El troceado interno ya evita que se repita la misma ventana.
+MAX_USOS_BIBLIOTECA = 8
+
+_usos_biblioteca: dict[str, int] = {}
+
+
 def _library(query: str, pool: AssetPool) -> Path | None:
-    """Mejor clip propio no usado todavía, por solape de etiquetas."""
+    """Mejor clip propio para la consulta, reutilizable con tope.
+
+    Se prefiere el que más etiquetas comparte y menos veces se ha usado. Si
+    ninguno comparte etiqueta se devuelve igualmente el menos usado: todos son
+    metraje astronómico curado, y cualquiera de ellos es mejor que lo que
+    devuelve un banco de stock cuando no tiene lo que se le pide.
+    """
+    indice = library_index()
+    if not indice:
+        return None
     wanted = _tokens(query)
-    if not wanted:
-        return None
-    best, best_score = None, 0
-    for path, tags in library_index():
-        if f"library:{path}" in pool.used:
+
+    mejor, mejor_clave = None, None
+    for path, tags in indice:
+        usos = _usos_biblioteca.get(str(path), 0)
+        if usos >= MAX_USOS_BIBLIOTECA:
             continue
-        score = len(wanted & tags)
-        if score > best_score:
-            best, best_score = path, score
-    if best is None:
+        solape = len(wanted & tags) if wanted else 0
+        # Primero el que más etiquetas comparte; a igualdad, el menos gastado.
+        clave = (-solape, usos)
+        if mejor_clave is None or clave < mejor_clave:
+            mejor, mejor_clave = path, clave
+
+    if mejor is None:
         return None
-    pool.take(f"library:{best}")
-    return best
+    _usos_biblioteca[str(mejor)] = _usos_biblioteca.get(str(mejor), 0) + 1
+    pool.take(f"library:{mejor}:{_usos_biblioteca[str(mejor)]}")
+    return mejor
 
 
 # Los bancos de stock NUNCA devuelven cero resultados: si no tienen lo que pides
