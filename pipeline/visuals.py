@@ -166,6 +166,11 @@ _TEXTURE_WORDS = {
 
 # Señales de que el clip no es un plano de recurso, pase lo que pase.
 # Consultas que se resuelven renderizando en vez de buscando.
+# Nombres de los clips de library/ que ha usado la produccion en curso.
+# La atribucion de una licencia CC BY solo debe citar lo que sale de
+# verdad en el video, no el catalogo entero.
+USADOS_BIBLIOTECA: set[str] = set()
+
 _LENTE_WORDS = ("gravitational lens", "lensing", "light bending", "bending light",
                 "spacetime curvature", "warped spacetime", "curved space",
                 "einstein ring", "light beam bending")
@@ -708,6 +713,7 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
         own = _library(term, pool)
         if own is not None:
             stats["biblioteca"] += 1
+            USADOS_BIBLIOTECA.add(own.stem)
             return own, False
 
     # 2. Archivos científicos, con el sujeto concreto.

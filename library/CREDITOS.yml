@@ -1,0 +1,85 @@
+# Créditos del material de la biblioteca.
+#
+# Las licencias Creative Commons de tipo BY obligan a citar título, autor,
+# fuente y licencia. No basta con «material de archivo de la ESA»: si el
+# vídeo se monetiza y la atribución falta, el titular puede reclamar.
+#
+# La clave es el nombre del fichero SIN extensión, tal y como está en
+# library/. El pipeline solo cita lo que de verdad ha usado en ese vídeo, así
+# que la descripción no se llena de créditos de clips que no salen.
+#
+# El material de dominio público —NASA, NASA SVS, JPL— no necesita entrada
+# aquí: no exige atribución. Se cita igualmente en la línea general por
+# cortesía.
+
+stars-orbiting-galactic-center:
+  titulo: Stars orbiting the black hole at the heart of the Milky Way
+  autor: ESO/L. Calçada/spaceengine.org
+  fuente: https://youtu.be/TF8THY5spmo
+  licencia: CC BY 4.0
+
+strong-gravitational-lensing-render:
+  titulo: Strong Gravitational lensing
+  autor: ESA/Hubble
+  fuente: https://youtu.be/Rsx0AGQhQvs
+  licencia: CC BY 4.0
+
+quasar-gravitational-lensing:
+  titulo: Gravitational lensing of distant quasar
+  autor: ESA/Hubble
+  fuente: https://youtu.be/tUOJ0mfHGWw
+  licencia: CC BY 4.0
+
+neutron-star-merger-kilonova:
+  titulo: Neutron star merger animation ending with kilonova
+  autor: ESA/Hubble
+  fuente: https://youtu.be/bBCArmUPgCw
+  licencia: CC BY 4.0
+
+zoom-galactic-center-region:
+  titulo: Zoom of the Milky Way's central region
+  autor: ESO/N. Risinger/DSS
+  fuente: https://youtu.be/6uVNBGgHApU
+  licencia: CC BY 4.0
+
+spiral-galaxy-m88-pan:
+  titulo: "Pan video: M88"
+  autor: ESA/Hubble
+  fuente: https://youtu.be/H3KNj8GYeVk
+  licencia: CC BY 4.0
+
+hubble-ultra-deep-field-webb:
+  titulo: Transition video, Webb image with Hubble Ultra Deep Field
+  autor: ESA/Webb, NASA & CSA
+  fuente: https://youtu.be/Bf6A-FNW2xY
+  licencia: CC BY 4.0
+
+supermassive-black-hole-simulation:
+  titulo: Simulation of a Supermassive Black Hole
+  autor: ESO/L. Calçada
+  fuente: https://youtu.be/3NeIVjfuKQY
+  licencia: CC BY 4.0
+
+material-orbiting-accretion-disk:
+  titulo: Simulation of material orbiting close to a black hole
+  autor: ESO/Gravity Consortium/L. Calçada
+  fuente: https://youtu.be/Zmdcew3g9ME
+  licencia: CC BY 4.0
+
+warped-spacetime-colliding:
+  titulo: Warped Space and Time Around Colliding Black Holes
+  autor: SXS Collaboration / LIGO Lab Caltech-MIT
+  fuente: https://youtu.be/1agm33iEAuo
+  licencia: CC BY 3.0
+
+two-black-holes-merging:
+  titulo: Two Black Holes Merge into One
+  autor: SXS Collaboration / LIGO Lab Caltech-MIT
+  fuente: https://youtu.be/I_88S8DWbcU
+  licencia: CC BY 3.0
+
+event-horizon-telescope:
+  titulo: European Infrastructures in the Event Horizon Telescope
+  autor: ESO
+  fuente: https://youtu.be/ljUixb41cvo
+  licencia: CC BY 4.0

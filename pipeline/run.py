@@ -208,6 +208,43 @@ def _pick_hero(plan, workdir: Path, video: Path) -> Path | None:
         return None
 
 
+def _creditos() -> str:
+    """Linea de creditos, con la atribucion que exige cada licencia.
+
+    Las Creative Commons de tipo BY obligan a citar titulo, autor, fuente y
+    licencia. Decir «material de la ESA» no cumple, y en un canal que monetiza
+    el titular puede reclamar los ingresos del video entero.
+
+    Solo se cita lo que se ha usado de verdad: library/CREDITOS.yml tiene el
+    catalogo y visuals.USADOS_BIBLIOTECA lo que ha entrado en este montaje.
+    """
+    import yaml
+
+    from . import visuals
+
+    partes = ["Material de archivo: NASA / NASA SVS / JPL-Caltech "
+              "(dominio público) y bancos de vídeo de licencia libre."]
+
+    fichero = config.ROOT / "library" / "CREDITOS.yml"
+    if fichero.exists() and visuals.USADOS_BIBLIOTECA:
+        try:
+            catalogo = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
+        except Exception:  # noqa: BLE001
+            catalogo = {}
+        citas = []
+        for nombre in sorted(visuals.USADOS_BIBLIOTECA):
+            c = catalogo.get(nombre)
+            if not c:
+                continue
+            citas.append(f"· «{c['titulo']}» — {c['autor']} — "
+                         f"{c['fuente']} — {c['licencia']}")
+        if citas:
+            partes.append("")
+            partes.append("Con material bajo licencia Creative Commons:")
+            partes.extend(citas)
+    return "\n".join(partes)
+
+
 def _full_description(plan) -> str:
     tags = [t for t in plan.tags[:3]]
     hashtags = " ".join("#" + t.replace(" ", "").replace("-", "") for t in tags)
@@ -215,8 +252,7 @@ def _full_description(plan) -> str:
     if hashtags:
         parts.append(hashtags)
     parts.append(
-        "Material de archivo: NASA / ESA / JPL-Caltech (dominio público) y "
-        "bancos de vídeo de licencia libre."
+        _creditos()
     )
     return "\n\n".join(p for p in parts if p)[:5000]
 
