@@ -100,7 +100,10 @@ def library_index() -> list[tuple[Path, set[str]]]:
         return []
     index = []
     for path in sorted(LIBRARY_DIR.rglob("*")):
-        if path.suffix.lower() not in (".mp4", ".mov", ".webm", ".m4v"):
+        # .mkv entra: yt-dlp lo usa cuando junta pistas que no caben en mp4,
+        # que es justo lo que pasa al bajar el 4K de YouTube en AV1. Dos
+        # clips buenos se quedaron fuera del índice por no estar aquí.
+        if path.suffix.lower() not in (".mp4", ".mov", ".webm", ".m4v", ".mkv"):
             continue
         rel = path.relative_to(LIBRARY_DIR)
         tags = _tokens(str(rel.with_suffix("")))
