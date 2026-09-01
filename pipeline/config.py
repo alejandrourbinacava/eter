@@ -247,7 +247,7 @@ MUSIC_CACHE = CACHE_DIR / "music"
 # Cuántos planos por vídeo se renderizan aquí. Pocos a propósito: el diagrama
 # y el agujero negro impresionan la primera vez y cansan a la quinta, y cada
 # uno cuesta unos minutos de CPU en el runner.
-MAX_RENDER = int(os.getenv("ETER_MAX_RENDER", "3"))
+MAX_RENDER = int(os.getenv("ETER_MAX_RENDER", "6"))
 
 RENDER3D = os.getenv("ETER_RENDER3D", "1") not in ("0", "false", "no")
 

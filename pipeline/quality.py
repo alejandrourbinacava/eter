@@ -238,9 +238,23 @@ def criba(videos: list[Path], tema: str, workdir: Path) -> set[int]:
     datos = base64.standard_b64encode(tira.read_bytes()).decode()
     prompt = f"""Esta rejilla son {len(indices)} fotogramas, uno por clip, numerados de 0 a {len(indices) - 1} de izquierda a derecha y de arriba abajo. Son candidatos a entrar en un documental espacial sobre: «{tema}»
 
-Di cuáles NO valen. No valen: escenas terrestres cotidianas, interiores, carteles o texto incrustado, archivo médico o de laboratorio, naturaleza de la Tierra, gráficos de tecnología o química, y fondos abstractos que no muestran ningún objeto concreto.
+Di cuáles NO valen. La lista es la misma que aplica el control final, porque de nada sirve cribar con un criterio más blando que el que luego rechaza el montaje entero:
 
-Sí valen: cualquier objeto astronómico real o recreado, naves, satélites, astronautas, y la Tierra vista desde el espacio.
+- Escenas terrestres cotidianas: deporte, oficinas, ciudades, aviones, gente.
+- OBJETOS de estudio o de oficina sobre fondo liso: un megáfono, un reloj, una
+  taza, herramientas. Que el fondo sea negro o blanco y parezca «limpio» no lo
+  convierte en astronómico.
+- Maquinaria y obra: canteras, excavadoras, grúas, fábricas.
+- Texturas y patrones planos: azulejos, mosaicos, telas, papel, mármol, roca,
+  fósiles, gotas de agua. Un patrón repetido nunca es un objeto del espacio.
+- Archivo médico o de laboratorio: células, microscopía, órganos, tubos.
+- Naturaleza de la Tierra: árboles, flores, insectos, playas, volcanes, lluvia.
+- Gráficos de tecnología o química: retículas de partículas, esferas unidas.
+- Fondos abstractos que no muestran ningún objeto concreto.
+
+Sí valen: cualquier objeto astronómico real o recreado, naves, satélites, telescopios, astronautas, y la Tierra vista desde el espacio.
+
+Sé estricto: ante la duda, descarta. Sobra material y falta criterio.
 
 Devuelve solo: {{"fuera": [números]}}"""
 
