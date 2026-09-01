@@ -194,6 +194,11 @@ _REJECT_WORDS = {
     # "ocean", "sea" y "wave" NO entran aquí: los planos legítimos de la
     # Tierra desde órbita los llevan en las etiquetas y se caían con ellos.
     # Las playas ya las corta "beach", que está más abajo.
+    # lo que se coló tras endurecer el portero: un torii al atardecer, una
+    # erupción volcánica, un horizonte urbano de noche y un reloj de pared.
+    "torii", "temple", "shrine", "volcano", "lava", "eruption", "city skyline",
+    "cityscape", "skyline", "night city", "clock", "watch", "balloon",
+    "hot air balloon", "bokeh orange", "blurred surface",
     # objetos de oficina, obra y decoración que se colaron en el último
     # montaje: un megáfono blanco sobre fondo blanco, una cantera con
     # excavadoras y un mosaico de azulejos, en un vídeo sobre agujeros negros.

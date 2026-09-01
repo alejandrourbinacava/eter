@@ -108,6 +108,14 @@ _reparto = inspect.getsource(visuals.build_clips)
 comprobar("la consulta específica también se busca",
           "opciones.append(especifica)" in _reparto)
 
+# El renderizado propio falló en una producción entera con «No module named
+# numpy» porque la dependencia no estaba en requirements.txt: el módulo importa
+# numpy dentro de las funciones, así que el fallo no aparece hasta que se usa.
+_reqs = (RAIZ / "requirements.txt").read_text(encoding="utf-8")
+comprobar("numpy y scipy están en requirements.txt",
+          "numpy" in _reqs and "scipy" in _reqs,
+          "el renderizado propio fallará en el runner")
+
 comprobar("el control de calidad está conectado antes de publicar",
           "quality.exigir(" in (RAIZ / "pipeline/run.py").read_text(encoding="utf-8"),
           "se publicaría sin que nadie mire el montaje")

@@ -6,3 +6,9 @@ google-api-python-client>=2.120
 google-auth>=2.28
 google-auth-oauthlib>=1.2
 python-dotenv>=1.0
+
+# Renderizado propio de planos: agujero negro, diagramas de lente, campo de
+# estrellas. Sin estas dos el runner falla con «No module named 'numpy'» y se
+# queda sin un solo render, que fue lo que pasó en una producción entera.
+numpy>=1.26
+scipy>=1.11
