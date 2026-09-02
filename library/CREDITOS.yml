@@ -83,3 +83,65 @@ event-horizon-telescope:
   autor: ESO
   fuente: https://youtu.be/ljUixb41cvo
   licencia: CC BY 4.0
+
+# --- Saturno y planetas ---------------------------------------------------
+
+saturn-hubble-webb-2024:
+  titulo: Saturn (2024 Hubble and Webb images, clean)
+  autor: ESA/Hubble, NASA & CSA
+  fuente: https://youtu.be/EF6mID4Z2HM
+  licencia: CC BY 4.0
+
+hubble-spoke-season-pan:
+  titulo: "Pan: Hubble watches spoke season on Saturn"
+  autor: ESA/Hubble & NASA
+  fuente: https://youtu.be/SffvtXszZMM
+  licencia: CC BY 4.0
+
+hubble-grand-tour-solar-system:
+  titulo: Pans of Hubble's Grand Tour of the Solar System
+  autor: ESA/Hubble & NASA
+  fuente: https://youtu.be/LStuzpCOcK0
+  licencia: CC BY 4.0
+
+enceladus-plume-torus:
+  titulo: Enceladus Plume and Torus
+  autor: ESA/Webb, NASA & CSA
+  fuente: https://youtu.be/Lr0v-I9qf-w
+  licencia: CC BY 4.0
+
+white-dwarf-planet-system:
+  titulo: Artist's animation of the WDJ0914+1914 system
+  autor: ESO/M. Kornmesser
+  fuente: https://youtu.be/gva1wHsOhok
+  licencia: CC BY 4.0
+
+pan-over-saturn:
+  titulo: Pan Over Saturn
+  autor: ESA/Hubble & NASA
+  fuente: https://youtu.be/Sq-LSi5Y6H4
+  licencia: CC BY 4.0
+
+saturn-moon-animation:
+  titulo: Animation of Saturn's Moon
+  autor: ESA/Hubble & NASA
+  fuente: https://youtu.be/80gQBqg7-Fg
+  licencia: CC BY 4.0
+
+jupiter-global-map:
+  titulo: Global map of Jupiter
+  autor: ESA/Hubble & NASA
+  fuente: https://youtu.be/utddQq6tIEw
+  licencia: CC BY 4.0
+
+amazing-moons-sciencecast:
+  titulo: "ScienceCasts: Amazing Moons"
+  autor: NASA
+  fuente: https://youtu.be/CQjZf2bW9XQ
+  licencia: Dominio público (NASA)
+
+sun-becoming-red-giant:
+  titulo: Artist's animation of the Sun becoming a red giant
+  autor: ESO/M. Kornmesser
+  fuente: https://youtu.be/MXqwRYaa1qA
+  licencia: CC BY 4.0
