@@ -215,8 +215,12 @@ MOTION_FPS = 2.0
 # foto, y salió mal: de 185 planos hubo que rehacer 123 por salir congelados.
 # El umbral no distinguía el metraje muerto del que se mueve despacio pero
 # vale, y el montaje se pasó media hora peleando consigo mismo. Vuelve a 2,5.
-MIN_PERCEIVED = 2.5   # mediana del clip; por debajo, es una foto con ruido
-DEAD_WINDOW = 1.5     # tramo concreto sin vida aunque el clip sí se mueva
+# Se probó 3,0 y hubo que rehacer 123 planos de 185, así que 2,8 es el punto
+# donde aprieta sin pelearse consigo mismo. Medido en el último montaje: el
+# cuarto más quieto quedaba por debajo de 1,87, o sea que subir DEAD_WINDOW a
+# 1,9 recorta justo esa cola sin tocar el resto.
+MIN_PERCEIVED = 2.8   # mediana del clip; por debajo, es una foto con ruido
+DEAD_WINDOW = 1.9     # tramo concreto sin vida aunque el clip sí se mueva
 
 
 def perceived_motion(video: Path, duration: float) -> tuple[float, list[float]]:

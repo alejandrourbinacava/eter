@@ -764,11 +764,17 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
         from . import render3d
 
         texto = " ".join(specific + broad).lower()
+        hechos = stats.get("render3d", 0)
         tipo = None
         if any(p in texto for p in _LENTE_WORDS):
             tipo = "lente"
         elif any(p in texto for p in _AGUJERO_WORDS):
-            tipo = "agujero"
+            # Los dos primeros renders de la tanda son SIEMPRE diagrama, aunque
+            # la consulta hable de agujeros negros. Condicionarlo a que el guion
+            # pidiera «lensing» dejó un vídeo entero con doce agujeros negros y
+            # cero ilustraciones: un guion sobre escapar de un agujero negro
+            # nunca usa esa palabra, y el diagrama explica el mecanismo igual.
+            tipo = "lente" if hechos < 2 else "agujero"
         if tipo:
             dest = raw_dir / f"render_{counter:03d}.mp4"
             try:

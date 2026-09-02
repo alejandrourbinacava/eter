@@ -360,11 +360,11 @@ def plan(scenes) -> list[Shot]:
 # El recorrido sube a un 12-14 % del encuadre. Por encima se nota el barrido y
 # marea; por debajo no basta para despegar un plano lento.
 _PUSHES = (
-    ("in", 1.00, 1.13),
-    ("out", 1.14, 1.00),
-    ("in", 1.03, 1.14),
-    ("out", 1.12, 1.01),
-    ("in", 1.01, 1.12),
+    ("in", 1.00, 1.18),
+    ("out", 1.19, 1.00),
+    ("in", 1.04, 1.20),
+    ("out", 1.17, 1.02),
+    ("in", 1.02, 1.17),
 )
 
 
