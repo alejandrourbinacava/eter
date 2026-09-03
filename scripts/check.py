@@ -148,6 +148,19 @@ try:
 except Exception as exc:  # noqa: BLE001
     comprobar("daily.yml es YAML válido", False, str(exc))
 
+# El paso que publica el release adjunta varios ficheros del directorio de
+# trabajo. Si una vía de producción deja de escribir uno, el montaje entero
+# —hora y media de runner— se tira a la basura al final. Pasó con la
+# descripción y se perdió un vídeo de doce minutos ya terminado.
+adjuntos = ["miniatura.jpg", "subtitulos.srt", "descripcion.txt", "plan.json"]
+fuente = (RAIZ / "scripts/from_script.py").read_text(encoding="utf-8")
+paso = (RAIZ / ".github/workflows/daily.yml").read_text(encoding="utf-8")
+for fichero in adjuntos:
+    if fichero not in paso:
+        continue
+    comprobar(f"from_script escribe {fichero}", fichero in fuente,
+              "el release lo adjunta: sin él se pierde el vídeo al final")
+
 print("\nSecretos")
 import os  # noqa: E402
 
