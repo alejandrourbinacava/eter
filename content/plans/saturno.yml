@@ -1,0 +1,126 @@
+# Plan visual de «Por Qué Es Imposible Aterrizar En Saturno».
+#
+#   query     el sujeto concreto, para los archivos científicos (NASA SVS, NASA)
+#   generic   cuatro descripciones para los bancos de stock, sin nombres propios
+#   emphasis  la frase de remate sobre la que cae el golpe de sonido. Tiene que
+#             aparecer LITERAL en la escena; si no, se descarta el golpe.
+#
+# Las genéricas van escritas para engancharse con la biblioteca propia: hay
+# cuatro clips de Saturno en library/saturn (Hubble+Webb 2024, temporada de
+# radios, pan sobre el planeta, animación de su luna) y cuatro de planetas en
+# library/planets. Por eso repiten palabras como saturn, planet, rings y clouds:
+# el indexador empareja por esas etiquetas.
+
+title: Por Qué Es Imposible Aterrizar En Saturno
+thumb_word: IMPOSIBLE
+keyword: saturn rings cassini
+thumb_prompt: >-
+  Saturn seen up close from just above its cloud tops, the rings cutting
+  diagonally across the frame, a tiny spacecraft silhouette falling into the
+  yellow banded atmosphere, dramatic and photorealistic on black
+description: |-
+  🪐 Saturno es el planeta que cualquiera sabe dibujar: un círculo y un anillo. Lo hemos orbitado trece años, contado 274 lunas y medido sus vientos. Y aun así hay una pregunta que nadie hace.
+
+  🌀 ¿Dónde se posaría exactamente una nave? No hay respuesta. Saturno no tiene suelo: es hidrógeno que se vuelve más denso hasta convertirse en metal líquido, y su único núcleo sólido está a cincuenta mil kilómetros de profundidad y a 11.700 grados.
+
+  ⏱️ Cassini aguantó cerca de un minuto al intentar bajar. El récord de la humanidad en un gigante gaseoso son 58 minutos, en Júpiter. Aterrizar allí no es difícil: es que la palabra no significa nada.
+tags:
+  - saturno
+  - por qué es imposible
+  - aterrizar en saturno
+  - Cassini
+  - anillos de Saturno
+  - hidrógeno metálico
+  - gigante gaseoso
+  - hexágono de Saturno
+  - Titán
+  - Huygens
+  - Encélado
+  - sonda Galileo
+  - Júpiter
+  - sistema solar
+  - núcleo planetario
+  - presión atmosférica
+  - Gran Mancha Blanca
+  - vientos de Saturno
+  - NASA
+  - exploración espacial
+  - astrofísica
+  - documental espacial
+  - divulgación científica
+  - universo
+  - planetas gaseosos
+
+scenes:
+  0:
+    query: saturn rings cassini
+    generic: [saturn planet rings, ringed planet space, saturn from orbit, planet with rings rotating]
+    emphasis: Sabemos tanto de Saturno que parece razonable preguntarse cuándo bajaremos.
+  1:
+    query: saturn cloud tops
+    generic: [gas giant clouds, planet surface from orbit, rocky planet surface, planet atmosphere layers]
+    emphasis: Saturno no tiene suelo.
+  2:
+    query: saturn atmosphere layers
+    generic: [planet cloud bands, gas planet close up, planet limb from space, atmosphere edge planet]
+    emphasis: Una línea dibujada en el aire para poder hacer cuentas.
+  3:
+    query: saturn clouds ammonia
+    generic: [swirling planet clouds, storm bands gas giant, cold planet distant sun, planet clouds moving]
+    emphasis: Un huracán terrestre se muere cuando toca tierra.
+  4:
+    query: saturn size comparison
+    generic: [giant planet scale, planet next to earth, huge planet space, planet rotating slowly]
+    emphasis: No te mata la gravedad.
+  5:
+    query: saturn great white spot storm
+    generic: [giant storm planet, lightning in clouds, storm wrapping planet, turbulent atmosphere planet]
+    emphasis: Fue el sistema tormentoso más grande jamás observado en el sistema solar.
+  6:
+    query: saturn hexagon north pole
+    generic: [polar vortex planet, hexagonal cloud pattern, planet pole from above, jet stream planet]
+    emphasis: Un hexágono.
+  7:
+    query: saturn interior structure
+    generic: [planet interior cutaway, deep atmosphere descent, pressure layers planet, gas becoming liquid]
+    emphasis: La presión ya no es un número que aguantar.
+  8:
+    query: metallic hydrogen saturn
+    generic: [liquid metal ocean, glowing dense material, molecules breaking apart, electric conductive fluid]
+    emphasis: Es un océano de metal líquido sin orilla y sin fondo visible.
+  9:
+    query: saturn core rock ice
+    generic: [planet core glowing, hot dense center, molten rock sphere, extreme heat interior]
+    emphasis: Es una imposibilidad física.
+  10:
+    query: saturn rings particles ice
+    generic: [ice chunks orbiting, ring particles close up, thin ring plane, debris orbiting planet]
+    emphasis: Diez.
+  11:
+    query: cassini grand finale dives
+    generic: [spacecraft near planet, probe between rings, satellite orbiting planet, spacecraft antenna space]
+    emphasis: Un pasillo de dos mil kilómetros que nadie había atravesado nunca.
+  12:
+    query: cassini final plunge saturn
+    generic: [spacecraft burning atmosphere, probe entering planet, satellite disintegrating, spacecraft falling]
+    emphasis: Aguantó cerca de un minuto antes de que la fricción la desintegrara por completo.
+  13:
+    query: galileo probe jupiter descent
+    generic: [probe with parachute, capsule entering atmosphere, gas giant clouds descent, jupiter cloud bands]
+    emphasis: En Saturno, el núcleo sólido está cincuenta mil kilómetros más abajo.
+  14:
+    query: saturn atmosphere descent view
+    generic: [yellow cloud layers, dim distant sunlight, descending through clouds, thick atmosphere haze]
+    emphasis: el viento deja de ser viento
+  15:
+    query: gas giant deep atmosphere
+    generic: [dark dense atmosphere, opaque cloud depths, gradual transition material, pressure increasing depth]
+    emphasis: no hay frontera. En ningún sitio. Nunca.
+  16:
+    query: huygens titan landing
+    generic: [icy moon surface, methane lakes moon, ice moon geysers, moon with atmosphere]
+    emphasis: Lo único imposible es el planeta.
+  17:
+    query: saturn full view rings
+    generic: [ringed planet distant, planet rotating space, saturn wide shot, planet against stars]
+    emphasis: El planeta que cualquier niño sabe dibujar es también el único lugar del sistema solar donde la idea de llegar al suelo no tiene sentido.
