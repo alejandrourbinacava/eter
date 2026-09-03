@@ -40,6 +40,9 @@ on:
       tema:
         description: "Rehacer un tema concreto (índice en topics.yml). Vacío = el siguiente"
         default: ""
+      guion:
+        description: "Producir un guion escrito a mano (p. ej. saturno). Vacío = generar uno"
+        default: ""
 
 # Nunca dos renders a la vez: compartirían cuota de API y historial.
 concurrency:
@@ -161,9 +164,23 @@ jobs:
           else                                            MODO="--no-upload"
           fi
           echo "Modo: ${MODO:-subir a YouTube}"
-          TEMA=""
-          if [ -n "${{ inputs.tema }}" ]; then TEMA="--topic ${{ inputs.tema }}"; fi
-          python -m pipeline.run $MODO $TEMA
+          if [ -n "${{ inputs.guion }}" ]; then
+            # Guion escrito a mano: no pasa por el generador ni por el control
+            # de calidad, así que no gasta un solo token de Anthropic. Es la vía
+            # para producir sin créditos, y la que evita ocupar el equipo de
+            # casa durante hora y media con la CPU al noventa por ciento.
+            G="content/guiones/${{ inputs.guion }}.md"
+            P="content/plans/${{ inputs.guion }}.yml"
+            if [ ! -f "$G" ] || [ ! -f "$P" ]; then
+              echo "Falta $G o $P"; exit 1
+            fi
+            echo "Produciendo desde guion propio: $G"
+            ETER_QC=0 python scripts/from_script.py "$G" --plan "$P"
+          else
+            TEMA=""
+            if [ -n "${{ inputs.tema }}" ]; then TEMA="--topic ${{ inputs.tema }}"; fi
+            python -m pipeline.run $MODO $TEMA
+          fi
 
       - name: Espacio restante
         if: always() && steps.hora.outputs.sigue == 'si'
