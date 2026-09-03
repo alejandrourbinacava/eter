@@ -170,8 +170,16 @@ def main(argv=None) -> int:
         hero = thumbnail.hero_frame(video, workdir / "hero.jpg", at=min(60.0, duration / 3))
     thumbnail.build(plan.thumb_word, hero, workdir / "miniatura.jpg")
 
+    # La descripción, con sus hashtags y los créditos de licencia. Sin esto el
+    # paso que publica el release se queda sin fichero y tira por la borda un
+    # montaje ya terminado: pasó con un vídeo de 524 MB.
+    from pipeline.run import _full_description
+
+    (workdir / "descripcion.txt").write_text(
+        _full_description(plan), encoding="utf-8")
+
     write_json(workdir / "plan.json", plan.to_dict())
-    log.info("Listo. Vídeo, miniatura y subtítulos en %s", workdir)
+    log.info("Listo. Vídeo, miniatura, subtítulos y descripción en %s", workdir)
     log.info("Subtítulos: %s", srt.name)
     return 0
 
