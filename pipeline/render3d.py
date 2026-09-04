@@ -750,3 +750,178 @@ def diagrama_lente(dest: Path, seconds: float = 9.0, semilla: int = 3):
     log.info("Renderizando diagrama de lente: %d fotogramas a %dx", n, SS)
     salida = _guardar(marcos, dest, fps)
     return (salida, eventos) if salida else None
+
+
+# ---------------------------------------------------------------------------
+# Saturno
+# ---------------------------------------------------------------------------
+
+# Radios del sistema de anillos, en radios ecuatoriales del planeta. Son los
+# valores reales, y la División de Cassini entre 1,95 y 2,03 es lo que hace que
+# el anillo se lea como Saturno y no como un disco cualquiera.
+_ANILLOS = (
+    # (interior, exterior, opacidad, brillo)
+    (1.24, 1.53, 0.28, 0.55),   # anillo C, tenue
+    (1.53, 1.95, 0.92, 1.00),   # anillo B, el denso y brillante
+    (1.95, 2.03, 0.06, 0.40),   # División de Cassini: casi vacía
+    (2.03, 2.27, 0.62, 0.86),   # anillo A
+)
+
+# Saturno está visiblemente achatado: 60.268 km de radio ecuatorial contra
+# 54.364 en los polos. Dibujarlo redondo es el error que delata una ilustración.
+_ACHATAMIENTO = 54364 / 60268
+
+
+def saturno(dest: Path, seconds: float = 6.0, semilla: int = 0,
+            inclinacion: float = 17.0, giro: float = 1.0) -> Path | None:
+    """Saturno con sus anillos, girando, con las dos sombras que importan.
+
+    La sombra del planeta sobre los anillos y la banda de sombra de los anillos
+    sobre las nubes son la firma visual de Saturno: sin ellas el dibujo se lee
+    como un icono, no como un mundo.
+
+    `inclinacion` es la apertura del anillo vista desde la cámara, en grados.
+    """
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+
+    W, H = config.WIDTH, config.HEIGHT
+    fps = config.FPS
+    n = max(int(seconds * fps), 1)
+    rng = np.random.default_rng(semilla)
+
+    # --- textura de nubes: bandas en latitud, no ruido isótropo ------------
+    tw, th = 1024, 512
+    lat = np.linspace(-1.0, 1.0, th, dtype=np.float32)[:, None]
+    # Cinturones y zonas alternos, más apretados hacia los polos.
+    bandas = (0.5 + 0.5 * np.sin(lat * 11.0 + 0.6)) * 0.55 \
+        + (0.5 + 0.5 * np.sin(lat * 26.0)) * 0.18
+    turbulencia = np.zeros((th, tw), dtype=np.float32)
+    for escala, peso in ((28, 1.0), (11, 0.45), (4, 0.2)):
+        capa = gaussian_filter(rng.random((th, tw)).astype(np.float32), (escala * 0.35, escala))
+        capa = (capa - capa.min()) / (capa.max() - capa.min() + 1e-9)
+        turbulencia += capa * peso
+    turbulencia /= turbulencia.max()
+    # La turbulencia se estira en longitud: el viento zonal arrastra las nubes.
+    nubes = np.clip(bandas + (turbulencia - 0.5) * 0.30, 0, 1).astype(np.float32)
+
+    # Paleta de Saturno: crema, ocre y ámbar. Nada de gris.
+    def tintar(v):
+        return np.stack([
+            0.52 + 0.46 * v,
+            0.44 + 0.40 * v,
+            0.30 + 0.28 * v,
+        ], axis=-1).astype(np.float32)
+
+    # --- geometría ---------------------------------------------------------
+    incl = np.radians(inclinacion)
+    sin_i, cos_i = np.sin(incl), np.cos(incl)
+    Rp = H * 0.30                      # radio ecuatorial en píxeles
+    cx, cy = W * 0.44, H * 0.54
+
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+
+    cielo = _cielo(W, H, semilla + 11)
+
+    marcos = []
+    for k in range(n):
+        avance = k / max(n - 1, 1)
+        img = cielo.copy()
+
+        # La cámara se acerca un 14 % y deriva: es lo que convierte una
+        # ilustración girando en un plano de documental. Sin esto el plano
+        # medía 0,08 de movimiento percibido y el montador lo daba por muerto.
+        acerca = 1.0 + 0.34 * avance
+        Rp_k = Rp * acerca
+        dx = xx - (cx + W * 0.07 * avance)
+        dy = yy - (cy - H * 0.05 * avance)
+
+        # Elipse del planeta (achatado).
+        dentro_planeta = (dx / Rp_k) ** 2 + (dy / (Rp_k * _ACHATAMIENTO)) ** 2 <= 1.0
+
+        # Punto del plano de los anillos que se proyecta en cada píxel.
+        # sx = r·cosθ ; sy = r·sinθ·sin(i). Se invierte para sacar r y sinθ.
+        seno_theta = np.where(np.abs(sin_i) > 1e-3, dy / (Rp_k * sin_i), 0.0)
+        r_anillo = np.sqrt((dx / Rp_k) ** 2 + seno_theta ** 2)
+        delante = dy > 0                   # mitad cercana del anillo
+
+        # Máscara y color de los anillos, con un poco de grano radial.
+        grano = gaussian_filter(rng.random((H, W)).astype(np.float32), 1.2)
+        opacidad = np.zeros((H, W), dtype=np.float32)
+        brillo_anillo = np.zeros((H, W), dtype=np.float32)
+        for r0, r1, op, br in _ANILLOS:
+            m = (r_anillo >= r0) & (r_anillo < r1)
+            opacidad[m] = op * (0.82 + 0.36 * grano[m])
+            brillo_anillo[m] = br
+        # Los anillos se ven casi de canto cerca del borde: se afinan.
+        opacidad *= 0.55 + 0.45 * np.abs(sin_i)
+
+        # Sombra del planeta sobre los anillos. El Sol entra por arriba-izquierda.
+        luz = np.array([-0.62, 0.50, 0.60], dtype=np.float32)
+        luz /= np.linalg.norm(luz)
+        # Punto 3D del anillo: (r·cosθ, 0, r·sinθ) con el eje Y como eje de giro.
+        cos_theta = np.where(r_anillo > 1e-6, (dx / Rp_k) / np.maximum(r_anillo, 1e-6), 0.0)
+        P = np.stack([r_anillo * cos_theta,
+                      np.zeros_like(r_anillo),
+                      r_anillo * seno_theta / np.maximum(r_anillo, 1e-6) * r_anillo], axis=-1)
+        t = (P * luz).sum(axis=-1)
+        perp = P - t[..., None] * luz
+        dist = np.sqrt((perp ** 2).sum(axis=-1))
+        sombra_anillo = (dist < 1.0) & (t < 0)
+        opacidad = np.where(sombra_anillo, opacidad * 0.16, opacidad)
+
+
+            # --- anillos de detrás ---------------------------------------------
+        atras = (~delante) & (opacidad > 0) & (~dentro_planeta)
+        col = brillo_anillo[..., None] * np.array([1.0, 0.93, 0.80], dtype=np.float32)
+        a = (opacidad * atras)[..., None]
+        img = img * (1 - a) + col * a
+
+        # --- el planeta ------------------------------------------------------
+        # Coordenadas esféricas de la cara visible.
+        nx = dx / Rp
+        ny = dy / (Rp * _ACHATAMIENTO)
+        r2 = np.clip(1.0 - nx ** 2 - ny ** 2, 0, None)
+        nz = np.sqrt(r2)
+        lat_p = np.arcsin(np.clip(ny, -1, 1))
+        lon_p = np.arctan2(nx, np.maximum(nz, 1e-6))
+        # El giro desplaza la longitud: la textura rueda sobre la esfera.
+        u = ((lon_p / (2 * np.pi) + avance * giro * 0.45) % 1.0) * (tw - 1)
+        v = ((lat_p / np.pi + 0.5) * (th - 1))
+        muestra = nubes[np.clip(v.astype(np.int32), 0, th - 1),
+                        np.clip(u.astype(np.int32), 0, tw - 1)]
+        superficie = tintar(muestra)
+
+        # Iluminación difusa con el terminador donde toca.
+        normal = np.stack([nx, ny, nz], axis=-1)
+        difusa = np.clip((normal * luz).sum(axis=-1), 0, 1) ** 0.75
+        superficie *= (0.10 + 0.95 * difusa)[..., None]
+
+        # Banda de sombra de los anillos sobre las nubes: se busca dónde el rayo
+        # de sol que llega a cada punto cruza el plano del anillo.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            s = np.where(np.abs(luz[1]) > 1e-6, -ny / luz[1], 0.0)
+        cxr = nx + s * luz[0]
+        czr = nz + s * luz[2]
+        r_cruce = np.sqrt(cxr ** 2 + czr ** 2)
+        tapado = np.zeros_like(r_cruce, dtype=bool)
+        for r0, r1, op, _br in _ANILLOS:
+            if op < 0.2:
+                continue
+            tapado |= (r_cruce >= r0) & (r_cruce < r1) & (s > 0)
+        superficie = np.where(tapado[..., None], superficie * 0.42, superficie)
+
+        # Borde de atmósfera: un filo claro en el limbo.
+        limbo = np.clip(1.0 - nz, 0, 1) ** 3
+        superficie += (limbo * difusa)[..., None] * np.array([0.30, 0.26, 0.18], dtype=np.float32)
+
+        img = np.where(dentro_planeta[..., None], superficie, img)
+
+        # --- anillos de delante ---------------------------------------------
+        a = (opacidad * delante * (opacidad > 0))[..., None]
+        img = img * (1 - a) + col * a
+
+        # Deriva de cámara muy lenta, para que el plano no esté clavado.
+        marcos.append(np.clip(img * 255, 0, 255).astype(np.uint8))
+
+    return _guardar(marcos, dest, fps)
