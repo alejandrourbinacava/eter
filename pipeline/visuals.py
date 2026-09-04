@@ -131,6 +131,15 @@ _ETIQUETAS_DEBILES = {
     "giant", "space", "deep", "view", "close", "field", "system", "animation",
     "render", "simulation", "pan", "zoom", "video", "real", "large", "small",
     "region", "material", "light", "dark", "hot", "cold", "new", "old",
+    # Verbos y participios. Describen lo que hace el plano, no lo que sale en
+    # él: «ice chunks orbiting» casaba con «stars-orbiting-galactic-center» y
+    # metía agujeros negros en Saturno. Un sujeto identifica; una acción, no.
+    "orbiting", "rotating", "moving", "falling", "rising", "spinning",
+    "becoming", "merging", "colliding", "forming", "growing", "burning",
+    "distant", "seen", "over", "under", "into", "through", "around", "near",
+    # Palabras de posición: «hot dense center», el núcleo de Saturno, casaba
+    # con «stars-orbiting-galactic-center».
+    "center", "centre", "core", "edge", "surface", "top", "inside", "outer",
 }
 
 
@@ -167,6 +176,17 @@ def _library(query: str, pool: AssetPool) -> Path | None:
             continue
         solape = len(comun)
         if not solape:
+            continue
+        # La carpeta es la categoría del clip: `library/black-hole/...` es
+        # material de agujeros negros y punto. Si la consulta no menciona la
+        # categoría, una sola palabra en común no basta — así «planet against
+        # stars» dejaba de traer «stars-orbiting-galactic-center».
+        # Se compara sin la ese final: la carpeta `planets` tiene que casar
+        # con la consulta «planet with rings», que si no perdía todo el
+        # material de Júpiter aunque el guion hable de Júpiter.
+        categoria = {t.rstrip("s") for t in _tokens(path.parent.name)}
+        raiz = {t.rstrip("s") for t in wanted}
+        if categoria and not (raiz & categoria) and solape < 2:
             continue
         # Primero el que más etiquetas comparte; a igualdad, el menos gastado.
         clave = (-solape, usos)
@@ -231,6 +251,17 @@ _AGUJERO_WORDS = ("black hole", "accretion disk", "event horizon",
                   "supermassive black", "rotating black")
 
 _REJECT_WORDS = {
+    # Lo que trajo el último Saturno: una bandera de Sri Lanka ondeando, la
+    # Gran Mezquita de Abu Dabi y un atardecer en el mar. La mezquita entró por
+    # la palabra «moon» de «icy moon surface»: la arquitectura islámica va
+    # etiquetada con luna y media luna en todos los bancos.
+    "flag", "banner", "waving", "national", "patriotic", "independence",
+    "mosque", "minaret", "dome", "cathedral", "church", "basilica", "chapel",
+    "monastery", "palace", "castle", "monument", "statue", "landmark",
+    "architecture", "building", "facade", "tourist", "travel", "vacation",
+    "crescent moon", "moonlight", "full moon night", "moon over",
+    "sunset", "sunrise", "dusk", "dawn", "golden hour", "horizon sea",
+    "seascape", "coastline", "cliff", "island", "lagoon", "harbor", "port",
     # Aviación. «descending through clouds» y «atmosphere haze» traen aviones:
     # en el vídeo de Saturno entró una avioneta en una pista de aterrizaje.
     "airplane", "aeroplane", "aircraft", "airport", "runway", "jet", "cockpit",
