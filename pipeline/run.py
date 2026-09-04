@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from . import (assemble, captions, config, imagegen, motion, music, quality,
-               script_gen, sfx, thumbnail, topics, visuals, voice)
+               script_gen, sfx, subs, thumbnail, topics, visuals, voice)
 from .util import log, require_binaries, setup_logging, write_json
 
 
@@ -93,7 +93,11 @@ def main(argv: list[str] | None = None) -> int:
 
     rotulos = captions.build(plan.scenes, workdir)
     graficos = motion.build(plan.scenes, workdir)
-    video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos, graficos)
+    # Los subtítulos se callan mientras hay un rótulo grande en pantalla: dos
+    # bloques de texto a la vez no se leen, se estorban.
+    texto = subs.build(plan.scenes, workdir, evitar=[(a, b) for a, b, _ in rotulos])
+    video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos,
+                            graficos, subs=texto)
 
     # ---- control de calidad ----------------------------------------------
     # Última puerta antes de publicar. Las heurísticas de píxeles no saben que

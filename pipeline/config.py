@@ -144,6 +144,18 @@ GRADE_ENABLED = os.getenv("ETER_GRADE", "1") not in ("0", "false", "no")
 # Intensidad del grano. A 0 se quita. Por encima de 12 se ve como ruido.
 GRAIN = float(os.getenv("ETER_GRAIN", "7"))
 
+# Subtítulos quemados palabra a palabra. Es texto en pantalla continuo: lo que
+# permite ver el vídeo sin sonido, que es como se consume la mitad del tráfico.
+SUBS_ENABLED = os.getenv("ETER_SUBS", "1") != "0"
+
+# Opacidad del sangrado de altas luces. 0 lo apaga.
+HALATION = float(os.getenv("ETER_HALATION", "0.30"))
+
+# Altura en píxeles de cada banda negra. 100 sobre 1080 da un 2,39:1 aproximado,
+# que es la proporción que el ojo lee como «documental» antes de ver nada más.
+# Los rótulos tienen que quedar DENTRO del área útil; ver captions.CENTER_Y.
+LETTERBOX = int(os.getenv("ETER_LETTERBOX", "100"))
+
 # --------------------------------------------------------------------------
 # Música
 # --------------------------------------------------------------------------

@@ -17,7 +17,8 @@ from . import config
 from .util import ffmpeg, log, probe_duration
 
 
-def render(scenes, audio: Path, dest: Path, captions=None, graphics=None) -> Path:
+def render(scenes, audio: Path, dest: Path, captions=None, graphics=None,
+           subs=None) -> Path:
     captions = captions or []
     graphics = graphics or []
     clips = [Path(s.clip_path) for s in scenes]
@@ -78,15 +79,48 @@ def render(scenes, audio: Path, dest: Path, captions=None, graphics=None) -> Pat
             "colorbalance=rs=-0.05:gs=-0.01:bs=0.07:rm=0.02:bm=-0.02:"
             "rh=0.05:gh=0.01:bh=-0.04,"
             "eq=contrast=1.07:saturation=1.10:gamma=0.98,"
+            # Aberración cromática de dos píxeles. A este tamaño no se ve
+            # conscientemente y lee como óptica de verdad; a partir de seis
+            # lee como plantilla.
+            "rgbashift=rh=2:bh=-2,"
         )
         if config.GRAIN > 0:
-            grade += f"noise=alls={config.GRAIN:.0f}:allf=t+u,"
+            # Grano SOLO en luminancia (c0 es el plano Y). El de antes metía
+            # ruido también en crominancia y, sobre los negros del espacio,
+            # eso son manchas de color que además castigan al códec.
+            grade += f"noise=c0s={config.GRAIN + 2:.0f}:c0f=t+u,"
 
+    # Halación: las altas luces sangran en cálido. Es la diferencia entre
+    # «vídeo» y «cine» en material espacial, donde todo son puntos brillantes
+    # sobre negro. Se aísla lo que pasa de 200, se desenfoca mucho, se tiñe y
+    # se suma en modo pantalla.
+    if config.HALATION > 0:
+        steps.append(
+            f"[{current}]{grade}split[hal_b][hal_h];"
+            f"[hal_h]lutyuv=y='if(gt(val,200),val,16)',gblur=sigma=26,"
+            f"colorchannelmixer=rr=1.0:gg=0.58:bb=0.36[hal_g];"
+            f"[hal_b][hal_g]blend=all_mode=screen:all_opacity={config.HALATION:.2f}[graded]"
+        )
+        grade = ""
+        current = "graded"
+
+    # Viñeta que respira: la fija se lee como filtro, la que oscila muy
+    # despacio se lee como cámara.
     steps.append(
-        f"[{current}]{grade}vignette=angle=PI/5,"
-        f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[base]"
+        f"[{current}]{grade}vignette=angle='PI/5+0.02*sin(2*PI*t/9)',"
+        + (f"drawbox=x=0:y=0:w=iw:h={config.LETTERBOX}:c=black@1:t=fill,"
+           f"drawbox=x=0:y=ih-{config.LETTERBOX}:w=iw:h={config.LETTERBOX}:"
+           f"c=black@1:t=fill," if config.LETTERBOX else "")
+        + f"fade=t=in:st=0:d=1.2,fade=t=out:st={max(total - 2.0, 0):.2f}:d=2.0[base]"
     )
     current = "base"
+
+    # El texto va DESPUÉS del etalonaje y de las bandas: si entrara antes, el
+    # grano y la halación se le comerían el filo y las bandas lo recortarían.
+    if subs:
+        from . import subs as subs_mod
+        steps.append(f"[base]{subs_mod.filtro(subs)}[contexto]")
+        current = "contexto"
 
     # Los rótulos van DESPUÉS del viñeteado y del fundido de entrada: si
     # entraran antes, el fundido a negro del arranque se los llevaría por

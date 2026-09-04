@@ -440,6 +440,9 @@ def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
     frames = max(int(shot.duration * config.FPS), 1)
     w2, h2 = config.WIDTH * 2, config.HEIGHT * 2
 
+    # La rampa de escala es suave, no lineal: smoothstep arranca y frena en
+    # vez de moverse a velocidad constante, que es lo que hace que un
+    # travelling automático se lea como robótico.
     if shot.boost:
         # El sentido del barrido alterna para que dos fotos seguidas no se
         # muevan igual.
@@ -449,7 +452,7 @@ def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
         y = f"(ih-ih/zoom)*0.5*on/{frames}" if signo < 2 else f"(ih-ih/zoom)*(1-0.5*on/{frames})"
         motion = (
             f"scale={w2}:{h2},"
-            f"zoompan=z='{z0}+({z1}-{z0})*on/{frames}':d={frames}:x='{x}':y='{y}'"
+            f"zoompan=z='{z0}+({z1}-{z0})*(pow(on/{frames},2)*(3-2*(on/{frames})))':d={frames}:x='{x}':y='{y}'"
             f":s={config.WIDTH}x{config.HEIGHT}:fps={config.FPS}"
         )
     elif name == "flat":
@@ -458,7 +461,7 @@ def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
         # Rampa lineal de escala a lo largo del plano.
         motion = (
             f"scale={w2}:{h2},"
-            f"zoompan=z='{z0}+({z1}-{z0})*on/{frames}':d={frames}"
+            f"zoompan=z='{z0}+({z1}-{z0})*(pow(on/{frames},2)*(3-2*(on/{frames})))':d={frames}"
             f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
             f":s={config.WIDTH}x{config.HEIGHT}:fps={config.FPS}"
         )

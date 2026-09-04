@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml  # noqa: E402
 
 from pipeline import (assemble, captions, config, motion, music, sfx,  # noqa: E402
-                      thumbnail, visuals, voice)
+                      subs, thumbnail, visuals, voice)
 from pipeline.script_gen import Scene, VideoPlan  # noqa: E402
 from pipeline.util import (assert_no_text_lost, log, require_binaries,  # noqa: E402
                            sentences, setup_logging, slugify, write_json)
@@ -158,7 +158,11 @@ def main(argv=None) -> int:
     visuals.build_clips(plan.scenes, workdir)
     rotulos = captions.build(plan.scenes, workdir)
     graficos = motion.build(plan.scenes, workdir)
-    video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos, graficos)
+    # Los subtítulos se callan mientras hay un rótulo grande en pantalla: dos
+    # bloques de texto a la vez no se leen, se estorban.
+    texto = subs.build(plan.scenes, workdir, evitar=[(a, b) for a, b, _ in rotulos])
+    video = assemble.render(plan.scenes, audio, workdir / "video.mp4", rotulos,
+                            graficos, subs=texto)
 
     hero = None
     raw = workdir / "raw"
