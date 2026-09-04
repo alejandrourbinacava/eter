@@ -220,19 +220,31 @@ MOTION_FPS = 2.0
 # cuarto más quieto quedaba por debajo de 1,87, o sea que subir DEAD_WINDOW a
 # 1,9 recorta justo esa cola sin tocar el resto.
 MIN_PERCEIVED = 2.8   # mediana del clip; por debajo, es una foto con ruido
+
+# Movimiento ya medido de cada material, por ruta. Lo rellena clean_windows al
+# pasar; así el banco sabe con qué se está quedando sin pagar una segunda
+# extracción de fotogramas por cada una de las doscientas fuentes.
+MOVIMIENTO: dict[str, float] = {}
 DEAD_WINDOW = 1.9     # tramo concreto sin vida aunque el clip sí se mueva
 
 
-def perceived_motion(video: Path, duration: float) -> tuple[float, list[float]]:
-    """(mediana, serie) del movimiento percibido, muestreado a MOTION_FPS."""
+def perceived_motion(video: Path, duration: float,
+                    max_seconds: float = 0.0) -> tuple[float, list[float]]:
+    """(mediana, serie) del movimiento percibido, muestreado a MOTION_FPS.
+
+    `max_seconds` mira solo el principio del clip. Sirve para clasificar
+    fuentes largas sin pagar la extracción entera: para decidir si un material
+    es una fotografía o metraje de verdad basta con un minuto.
+    """
     import statistics
 
     if duration <= 0:
         return 99.0, []
+    limite = ["-t", f"{max_seconds:.1f}"] if max_seconds else []
     with tempfile.TemporaryDirectory(prefix="eter_mov_") as tmp:
         out = Path(tmp)
         try:
-            ffmpeg(["-i", str(video),
+            ffmpeg(["-i", str(video), *limite,
                     "-vf", f"fps={MOTION_FPS},scale=160:90,format=gray",
                     "-frames:v", "600", str(out / "m%04d.png")])
         except RuntimeError:
@@ -289,6 +301,7 @@ def clean_windows(video: Path, duration: float, min_len: float,
         # disfrazada, y el canal pidió clips.
         # Movimiento como lo percibe el ojo, no acumulado en segundos.
         central, serie = perceived_motion(video, duration)
+        MOVIMIENTO[str(video)] = central
         if central < MIN_PERCEIVED:
             log.debug("  %s descartado por quieto (percibido %.1f)",
                       video.name[:36], central)

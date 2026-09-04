@@ -962,6 +962,7 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
     autocrops: dict[str, str] = {}
     fillers = 0
     frozen = 0
+    congelados = 0
 
     for shot in plan:
         dest = shots_dir / f"{shot.scene_index:03d}_{shot.index:02d}.mp4"
@@ -986,7 +987,20 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         # trozo. Comprobar la fuente no basta, porque un clip puede moverse de
         # media y aun así el trozo concreto que se corta estar parado. Esta es
         # la única medida que mira lo que va a ver el espectador.
-        for intento in range(3):
+        # El material del espacio es casi todo negro, así que un trozo puede
+        # pasar el control de la fuente y aun así, recortado a cinco segundos y
+        # con un zoom del 18 %, no mover un solo píxel apreciable. En el vídeo
+        # de Saturno pasó en 84 de 159 planos: se reintentaban tres veces y,
+        # si seguían quietos, SE ACEPTABAN IGUAL. Eso es lo que el canal veía
+        # como «son todo imágenes».
+        #
+        # Ahora la escalera no se rinde: otro trozo -> cámara mucho más fuerte
+        # sobre ese mismo trozo -> otra fuente con la cámara fuerte. El empuje
+        # reforzado sube un plano muerto de 2,3 a 8,1 de movimiento percibido,
+        # medido sobre la foto más quieta de la biblioteca.
+        for intento in range(4):
+            shot.boost = intento >= 2 or (bank.is_still(shot.source)
+                                          if shot.source else False)
             try:
                 shots.render_shot(shot, dest, crop)
             except RuntimeError:
@@ -999,14 +1013,27 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
             movimiento = shots.shot_motion(dest)
             if movimiento >= shots.MIN_SHOT_MOTION:
                 break
-            if intento == 2:
-                log.debug("  %s sigue quieto (%.1f) tras 3 intentos", dest.stem, movimiento)
+
+            frozen += 1
+            if intento == 3:
+                log.debug("  %s sigue quieto (%.1f) tras 4 intentos", dest.stem, movimiento)
+                congelados += 1
                 break
 
+            # En el intento 2 no se cambia de material: se le aplica el
+            # recorrido de cámara fuerte al mismo trozo. Cambiar de clip no
+            # sirve de nada cuando lo que está quieto es el género entero.
+            if intento == 1:
+                log.debug("  %s congelado (%.1f), se fuerza la cámara", dest.stem, movimiento)
+                continue
+
             log.debug("  %s congelado (%.1f), se prueba otro trozo", dest.stem, movimiento)
-            frozen += 1
             otro = bank.segment(shot.query, shot.duration)
             if not otro:
+                shot.boost = True
+                shots.render_shot(shot, dest, crop)
+                if shots.shot_motion(dest) < shots.MIN_SHOT_MOTION:
+                    congelados += 1
                 break
             shot.source, shot.source_start, shot.is_image = otro
             key = str(shot.source)
@@ -1042,6 +1069,13 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
              used, worst, len(plan))
     if frozen:
         log.info("Planos rehechos por salir congelados: %d", frozen)
+    if congelados:
+        log.warning("Planos que SIGUEN quietos tras agotar los intentos: %d de %d",
+                    congelados, len(plan))
+    else:
+        log.info("Ningún plano queda congelado.")
+    log.info("Planos de material sin movimiento propio: %d de %d (tope %d%%)",
+             bank.still_shots, len(plan), int(shots.MAX_STILL_SHARE * 100))
     if stats["generado"] >= config.MAX_GENERATED:
         log.warning(
             "Se alcanzó el tope de %d planos generados. A partir de ahí se ha "

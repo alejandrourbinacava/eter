@@ -48,6 +48,27 @@ class Shot:
     source_start: float = 0.0
     is_image: bool = False
     path: Path | None = None
+    # El original no se mueve (una foto con paneo lento, tan comunes en el
+    # material de archivo). Se compensa con un desplazamiento de cámara mucho
+    # más marcado; ver _video_shot.
+    boost: bool = False
+
+
+# Movimiento percibido por debajo del cual un material NO es metraje: es una
+# fotografía, con o sin paneo lento por encima. Buena parte del archivo
+# científico —los «Pan» de ESA/Hubble, los mapas globales— es exactamente eso.
+#
+# El umbral se fijó midiendo la biblioteca entera: el material que de verdad se
+# mueve puntúa entre 5 y 17; las fotografías, entre 0,1 y 2,6. En 3,5 no hay
+# ningún caso dudoso.
+MIN_SOURCE_MOTION = 3.5
+
+# Y cuántos planos como mucho pueden salir de esas fuentes. Una fotografía bien
+# empujada sirve de recurso puntual; a partir de ahí el vídeo es un pase de
+# diapositivas. Sin este tope la biblioteca llegó a poner 176 planos de 264 en
+# el vídeo de Saturno, casi todos fotos, porque el control de calidad medía el
+# zoom que él mismo aplicaba y las daba por buenas.
+MAX_STILL_SHARE = 0.15
 
 
 @dataclass
@@ -65,6 +86,13 @@ class Source:
     clean: list[list[float]] = field(default_factory=list)
     free: list[list[float]] = field(default_factory=list)
     laps: int = 0
+    # Movimiento percibido del ORIGINAL, no del plano ya montado. Es la
+    # distinción que faltaba: ver MIN_SOURCE_MOTION.
+    motion: float = 99.0
+
+    @property
+    def still(self) -> bool:
+        return self.motion < MIN_SOURCE_MOTION
 
     def take(self, want: float, margin: float = 0.4) -> float | None:
         """Inicio del siguiente trozo libre y limpio, o None si se acabó."""
@@ -150,6 +178,20 @@ class ClipBank:
         self._last: Source | None = None
         self._screen = None
         self._pendientes: list[Source] = []
+        self._quietos = 0
+
+    def is_still(self, path: Path) -> bool:
+        """¿Este material es una fotografía? Lo pregunta el montador para
+        empujarle la cámara mucho más fuerte."""
+        clave = str(path)
+        for fuente in self._all:
+            if str(fuente.path) == clave:
+                return fuente.still or fuente.is_image
+        return False
+
+    @property
+    def still_shots(self) -> int:
+        return self._quietos
 
     def set_total_shots(self, total: int) -> None:
         """Fija cuántos planos hay que servir, para calcular el tope."""
@@ -164,6 +206,14 @@ class ClipBank:
         used = self._budget.get(id(source), 0)
         if used >= self._cap():
             return False
+        # Las fuentes sin movimiento propio comparten una bolsa común y
+        # pequeña. Cada una por separado cabía de sobra dentro del tope
+        # normal; sumadas, llenaban el vídeo de diapositivas.
+        if (source.still or source.is_image) and self._total_shots:
+            tope = max(2, int(self._total_shots * MAX_STILL_SHARE))
+            if self._quietos >= tope:
+                return False
+            self._quietos += 1
         self._budget[id(source)] = used + 1
         return True
 
@@ -184,10 +234,19 @@ class ClipBank:
                 log.debug("  %s descartado: ningún tramo limpio", path.name[:40])
                 return None
 
+        # Movimiento del material de partida, tal y como lo midió
+        # clean_windows al dejarlo pasar. Es distinto del movimiento del plano
+        # ya montado: ahí el propio zoom del Ken Burns aporta más de 2 puntos,
+        # así que ese medidor nunca puede distinguir metraje de fotografía.
+        motion = 0.0 if is_image else inspect_media.MOVIMIENTO.get(str(path), 99.0)
+
         source = Source(
             path=path, duration=duration, is_image=is_image,
-            clean=clean, free=[list(w) for w in clean],
+            clean=clean, free=[list(w) for w in clean], motion=motion,
         )
+        if source.still:
+            log.debug("  %s es una foto (movimiento %.1f): cuota reducida",
+                      path.name[:40], motion)
         self._by_query.setdefault(query, []).append(source)
         self._all.append(source)
         # Entra en la cola de cribado. Se mira cuando haya tanda completa, no
@@ -368,12 +427,32 @@ _PUSHES = (
 )
 
 
+# Recorrido de cámara para material que no se mueve solo. Un zoom del 18 %
+# sobre una fotografía deja algo que el ojo lee como quieto, aunque el medidor
+# lo apruebe. Con este —45 % de escala y un barrido en diagonal— el mismo clip
+# pasa de 2,3 a 8,1 de movimiento percibido, medido sobre la foto más muerta de
+# la biblioteca.
+_BOOST = (1.00, 1.45)
+
+
 def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
     name, z0, z1 = _PUSHES[(shot.scene_index + shot.index) % len(_PUSHES)]
     frames = max(int(shot.duration * config.FPS), 1)
     w2, h2 = config.WIDTH * 2, config.HEIGHT * 2
 
-    if name == "flat":
+    if shot.boost:
+        # El sentido del barrido alterna para que dos fotos seguidas no se
+        # muevan igual.
+        z0, z1 = _BOOST
+        signo = (shot.scene_index + shot.index) % 4
+        x = f"(iw-iw/zoom)*on/{frames}" if signo in (0, 3) else f"(iw-iw/zoom)*(1-on/{frames})"
+        y = f"(ih-ih/zoom)*0.5*on/{frames}" if signo < 2 else f"(ih-ih/zoom)*(1-0.5*on/{frames})"
+        motion = (
+            f"scale={w2}:{h2},"
+            f"zoompan=z='{z0}+({z1}-{z0})*on/{frames}':d={frames}:x='{x}':y='{y}'"
+            f":s={config.WIDTH}x{config.HEIGHT}:fps={config.FPS}"
+        )
+    elif name == "flat":
         motion = f"scale={int(config.WIDTH * z0)}:{int(config.HEIGHT * z0)}"
     else:
         # Rampa lineal de escala a lo largo del plano.
