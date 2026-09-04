@@ -74,7 +74,7 @@ scenes:
     emphasis: No te mata la gravedad.
   5:
     query: saturn great white spot storm
-    generic: [giant storm planet, lightning in clouds, storm wrapping planet, turbulent atmosphere planet]
+    generic: [giant storm on gas giant, jupiter great red spot, storm bands gas giant planet, turbulent gas giant atmosphere]
     emphasis: Fue el sistema tormentoso más grande jamás observado en el sistema solar.
   6:
     query: saturn hexagon north pole
@@ -110,7 +110,7 @@ scenes:
     emphasis: En Saturno, el núcleo sólido está cincuenta mil kilómetros más abajo.
   14:
     query: saturn atmosphere descent view
-    generic: [yellow cloud layers, dim distant sunlight, descending through clouds, thick atmosphere haze]
+    generic: [gas giant yellow cloud bands, saturn seen from orbit, gas giant cloud tops from space, planet atmosphere from orbit]
     emphasis: el viento deja de ser viento
   15:
     query: gas giant deep atmosphere

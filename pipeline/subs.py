@@ -164,12 +164,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
-_TAM_SUB = 56
-_TAM_CLAVE = 96
+# Medido sobre el primer vídeo con subtítulos quemados: a 56 px sobre 1080 el
+# texto queda como una línea fina en el borde y no compite con la imagen. La
+# competencia los pone a casi el doble. 76 px ocupa lo que tiene que ocupar sin
+# taparlo todo.
+_TAM_SUB = 76
+_TAM_CLAVE = 120
 
 # Las bandas negras comen 100 px por abajo. El subtítulo va JUSTO encima de la
 # banda, nunca a caballo: partido por el borde es ilegible.
-_MARGEN = config.LETTERBOX + 34
+_MARGEN = config.LETTERBOX + 42
 
 
 def build(scenes, workdir: Path,

@@ -125,13 +125,29 @@ MAX_USOS_BIBLIOTECA = 8
 _usos_biblioteca: dict[str, int] = {}
 
 
+# Palabras que aparecen en demasiados nombres de fichero para identificar nada
+# por sí solas. Sirven para desempatar, no para justificar una coincidencia.
+_ETIQUETAS_DEBILES = {
+    "giant", "space", "deep", "view", "close", "field", "system", "animation",
+    "render", "simulation", "pan", "zoom", "video", "real", "large", "small",
+    "region", "material", "light", "dark", "hot", "cold", "new", "old",
+}
+
+
 def _library(query: str, pool: AssetPool) -> Path | None:
     """Mejor clip propio para la consulta, reutilizable con tope.
 
-    Se prefiere el que más etiquetas comparte y menos veces se ha usado. Si
-    ninguno comparte etiqueta se devuelve igualmente el menos usado: todos son
-    metraje astronómico curado, y cualquiera de ellos es mejor que lo que
-    devuelve un banco de stock cuando no tiene lo que se le pide.
+    EXIGE que comparta al menos una etiqueta. Antes, si ninguno compartía
+    ninguna, se devolvía igualmente el menos usado, con el argumento de que
+    todo es metraje astronómico curado y cualquiera es mejor que lo que da un
+    banco de stock. Es falso: en el vídeo de Saturno eso puso cuatro planos de
+    agujeros negros binarios, cuatro de galaxias y el Sol. La biblioteca tiene
+    trece clips utilizables y solo uno es de Saturno, así que en cuanto se
+    gastaba pasaba a repartir lo que fuera.
+
+    Un plano fuera de tema es peor que un plano de stock mediocre: el
+    espectador perdona un fondo genérico, no perdona que le enseñes otra cosa
+    mientras le hablas de Saturno.
     """
     indice = library_index()
     if not indice:
@@ -143,7 +159,15 @@ def _library(query: str, pool: AssetPool) -> Path | None:
         usos = _usos_biblioteca.get(str(path), 0)
         if usos >= MAX_USOS_BIBLIOTECA:
             continue
-        solape = len(wanted & tags) if wanted else 0
+        comun = (wanted & tags) if wanted else set()
+        # Una coincidencia que solo se apoya en una palabra débil no vale: con
+        # ella, «gas giant clouds» casaba con «sun-becoming-red-giant» por la
+        # palabra «giant», y salía el Sol en mitad de Saturno.
+        if comun and comun <= _ETIQUETAS_DEBILES:
+            continue
+        solape = len(comun)
+        if not solape:
+            continue
         # Primero el que más etiquetas comparte; a igualdad, el menos gastado.
         clave = (-solape, usos)
         if mejor_clave is None or clave < mejor_clave:
@@ -207,6 +231,11 @@ _AGUJERO_WORDS = ("black hole", "accretion disk", "event horizon",
                   "supermassive black", "rotating black")
 
 _REJECT_WORDS = {
+    # Aviación. «descending through clouds» y «atmosphere haze» traen aviones:
+    # en el vídeo de Saturno entró una avioneta en una pista de aterrizaje.
+    "airplane", "aeroplane", "aircraft", "airport", "runway", "jet", "cockpit",
+    "airline", "flight", "pilot", "helicopter", "drone", "propeller", "wing",
+    "takeoff", "landing-gear", "aviation", "hangar", "airfield",
     # Relleno abstracto de banco de stock. Es lo peor que devuelven Pexels y
     # Pixabay para consultas de espacio: fondos de vídeo, bucles de partículas,
     # bolas de discoteca. Visto en un vídeo real, sobre la frase «ahí es donde
