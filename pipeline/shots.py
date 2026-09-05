@@ -206,15 +206,26 @@ class ClipBank:
         used = self._budget.get(id(source), 0)
         if used >= self._cap():
             return False
-        # Las fuentes sin movimiento propio comparten una bolsa común y
-        # pequeña. Cada una por separado cabía de sobra dentro del tope
-        # normal; sumadas, llenaban el vídeo de diapositivas.
-        if (source.still or source.is_image) and self._total_shots:
-            tope = max(2, int(self._total_shots * MAX_STILL_SHARE))
-            if self._quietos >= tope:
-                return False
-            self._quietos += 1
+        if not self._cabe_quieto(source):
+            return False
         self._budget[id(source)] = used + 1
+        return True
+
+    def _cabe_quieto(self, source: Source) -> bool:
+        """¿Queda cuota para un plano de material sin movimiento propio?
+
+        Las fuentes quietas comparten una bolsa común y pequeña. Cada una por
+        separado cabe de sobra en el tope normal; sumadas, llenan el vídeo de
+        diapositivas. Lo cuenta aquí y no en `_charge` porque la segunda vuelta
+        sobre las fuentes se salta `_charge` y escribe el presupuesto a mano:
+        por ese hueco se colaron 123 planos de foto de 161 con el tope en 24.
+        """
+        if not (source.still or source.is_image) or not self._total_shots:
+            return True
+        tope = max(2, int(self._total_shots * MAX_STILL_SHARE))
+        if self._quietos >= tope:
+            return False
+        self._quietos += 1
         return True
 
     def _add(self, query: str, path: Path, is_image: bool) -> Source | None:
@@ -227,8 +238,17 @@ class ClipBank:
 
         clean: list[list[float]] = []
         if not is_image:
+            # Tus propios clips no se tiran por estar quietos. Tres de los
+            # cuatro clips de Saturno de la biblioteca son fotografías con
+            # paneo —0,12, 0,89 y 1,16 de movimiento— y el filtro de fuente los
+            # descartaba enteros, con lo que el vídeo se quedaba con UN clip de
+            # Saturno y rellenaba el resto con stock genérico. Es material
+            # elegido a mano: entra, se marca como foto y se compensa con el
+            # recorrido de cámara fuerte, con su cuota. Ver MAX_STILL_SHARE.
+            propio = "library" in path.parts
             clean = inspect_media.clean_windows(
-                path, duration, config.SHOT_MIN, strict=_needs_strict_qc(path)
+                path, duration, config.SHOT_MIN, strict=_needs_strict_qc(path),
+                permitir_quieto=propio,
             )
             if not clean:
                 log.debug("  %s descartado: ningún tramo limpio", path.name[:40])
@@ -315,6 +335,8 @@ class ClipBank:
         #    la narración habla del Sol, en pantalla tiene que haber Sol aunque
         #    el plano se parezca a otro anterior.
         for source in sorted(mine, key=lambda s: s.laps):
+            if not self._cabe_quieto(source):
+                continue
             start = source.rewind(want)
             if start is not None:
                 self._budget[id(source)] = self._budget.get(id(source), 0) + 1

@@ -257,7 +257,8 @@ def perceived_motion(video: Path, duration: float,
 
 
 def clean_windows(video: Path, duration: float, min_len: float,
-                  strict: bool = True) -> list[list[float]]:
+                  strict: bool = True,
+                  permitir_quieto: bool = False) -> list[list[float]]:
     """Devuelve los intervalos [inicio, fin] del clip que son utilizables.
 
     Si el muestreo falla por lo que sea, se devuelve el clip entero: es
@@ -302,7 +303,7 @@ def clean_windows(video: Path, duration: float, min_len: float,
         # Movimiento como lo percibe el ojo, no acumulado en segundos.
         central, serie = perceived_motion(video, duration)
         MOVIMIENTO[str(video)] = central
-        if central < MIN_PERCEIVED:
+        if central < MIN_PERCEIVED and not permitir_quieto:
             log.debug("  %s descartado por quieto (percibido %.1f)",
                       video.name[:36], central)
             return []
@@ -310,10 +311,11 @@ def clean_windows(video: Path, duration: float, min_len: float,
         # La serie va a MOTION_FPS y los veredictos a 1/SAMPLE_EVERY, así que
         # cada veredicto agrupa los tramos que caen en su bucket.
         por_bucket = max(int(SAMPLE_EVERY * MOTION_FPS), 1)
-        for i in range(len(verdicts)):
-            tramo = serie[i * por_bucket:(i + 1) * por_bucket]
-            if tramo and max(tramo) < DEAD_WINDOW:
-                verdicts[i] = False
+        if not permitir_quieto:
+            for i in range(len(verdicts)):
+                tramo = serie[i * por_bucket:(i + 1) * por_bucket]
+                if tramo and max(tramo) < DEAD_WINDOW:
+                    verdicts[i] = False
 
     # Cada veredicto cubre su bucket de SAMPLE_EVERY segundos.
     windows: list[list[float]] = []
