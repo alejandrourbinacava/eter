@@ -251,6 +251,17 @@ _AGUJERO_WORDS = ("black hole", "accretion disk", "event horizon",
                   "supermassive black", "rotating black")
 
 _REJECT_WORDS = {
+    # «HAPPY NEW YEAR» en letras gigantes sobre la Tierra, y hierba brotando.
+    # El detector de rótulos por píxeles no lo vio: solo mira los fotogramas
+    # oscuros, porque sobre imagen brillante confunde la textura con letras.
+    # El nombre del fichero sí lo dice, y ahí no hay heurística que falle.
+    "happy new year", "new year", "newyear", "greeting", "celebration",
+    "countdown", "firework", "christmas", "holiday", "birthday", "wedding",
+    "anniversary card", "merry", "santa", "party hat",
+    # Vegetación y suelo terrestre.
+    "grass", "plant", "sprout", "seedling", "garden", "leaf", "leaves",
+    "flower", "moss", "vegetation", "forest", "tree", "meadow", "farm",
+    "crop", "harvest", "soil", "mud", "insect", "butterfly", "bee",
     # Lo que trajo el último Saturno: una bandera de Sri Lanka ondeando, la
     # Gran Mezquita de Abu Dabi y un atardecer en el mar. La mezquita entró por
     # la palabra «moon» de «icy moon surface»: la arquitectura islámica va

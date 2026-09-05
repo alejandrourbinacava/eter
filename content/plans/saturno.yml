@@ -78,7 +78,7 @@ scenes:
     emphasis: Fue el sistema tormentoso más grande jamás observado en el sistema solar.
   6:
     query: saturn hexagon north pole
-    generic: [polar vortex planet, hexagonal cloud pattern, planet pole from above, jet stream planet]
+    generic: [gas giant polar vortex from space, saturn north pole hexagon, gas giant cloud bands from orbit, jupiter polar storms]
     emphasis: Un hexágono.
   7:
     query: saturn interior structure
@@ -114,7 +114,7 @@ scenes:
     emphasis: el viento deja de ser viento
   15:
     query: gas giant deep atmosphere
-    generic: [dark dense atmosphere, opaque cloud depths, gradual transition material, pressure increasing depth]
+    generic: [gas giant deep clouds, jupiter dark cloud bands, gas giant night side, dense planetary atmosphere space]
     emphasis: no hay frontera. En ningún sitio. Nunca.
   16:
     query: huygens titan landing
@@ -122,5 +122,5 @@ scenes:
     emphasis: Lo único imposible es el planeta.
   17:
     query: saturn full view rings
-    generic: [ringed planet distant, planet rotating space, saturn wide shot, planet against stars]
+    generic: [saturn rings distant, saturn rotating in space, saturn wide shot, ringed gas giant starfield]
     emphasis: El planeta que cualquier niño sabe dibujar es también el único lugar del sistema solar donde la idea de llegar al suelo no tiene sentido.
