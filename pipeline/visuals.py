@@ -251,6 +251,16 @@ _AGUJERO_WORDS = ("black hole", "accretion disk", "event horizon",
                   "supermassive black", "rotating black")
 
 _REJECT_WORDS = {
+    # Ciencia ficción y bucles de VJ. Las consultas sobre el interior de un
+    # planeta no tienen metraje posible, así que los bancos devuelven lo más
+    # parecido que tienen: un túnel hexagonal de neón, un anillo magenta y una
+    # flota de naves de videojuego. «spacecraft» y «probe» NO entran aquí:
+    # Cassini y Huygens son el tema del vídeo.
+    "sci-fi", "scifi", "science fiction", "futuristic", "cyber", "cyberpunk",
+    "starship", "spaceship fleet", "battleship", "alien ship", "ufo",
+    "warp", "hyperspace", "portal", "tunnel", "wormhole tunnel", "vortex tunnel",
+    "digital", "hologram", "hud", "matrix", "grid lines", "laser",
+    "macro", "closeup texture", "skin", "pores", "microscope",
     # «HAPPY NEW YEAR» en letras gigantes sobre la Tierra, y hierba brotando.
     # El detector de rótulos por píxeles no lo vio: solo mira los fotogramas
     # oscuros, porque sobre imagen brillante confunde la textura con letras.

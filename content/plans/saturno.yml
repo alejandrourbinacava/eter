@@ -82,15 +82,15 @@ scenes:
     emphasis: Un hexágono.
   7:
     query: saturn interior structure
-    generic: [planet interior cutaway, deep atmosphere descent, pressure layers planet, gas becoming liquid]
+    generic: [saturn cloud tops close, gas giant atmosphere from orbit, saturn limb from space, jupiter cloud bands close]
     emphasis: La presión ya no es un número que aguantar.
   8:
     query: metallic hydrogen saturn
-    generic: [liquid metal ocean, glowing dense material, molecules breaking apart, electric conductive fluid]
+    generic: [saturn night side, gas giant dark limb, saturn from orbit close, jupiter deep clouds]
     emphasis: Es un océano de metal líquido sin orilla y sin fondo visible.
   9:
     query: saturn core rock ice
-    generic: [planet core glowing, hot dense center, molten rock sphere, extreme heat interior]
+    generic: [saturn against black space, gas giant full disc, saturn rings edge on, ringed planet in darkness]
     emphasis: Es una imposibilidad física.
   10:
     query: saturn rings particles ice
