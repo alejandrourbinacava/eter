@@ -120,7 +120,11 @@ def library_index() -> list[tuple[Path, set[str]]]:
 #
 # Ocho por clip y doce clips cubren noventa y seis planos, más de la mitad del
 # vídeo. El troceado interno ya evita que se repita la misma ventana.
-MAX_USOS_BIBLIOTECA = 8
+# Cuántas veces puede repartir el mismo clip propio. Con los bancos de stock
+# detrás, ocho evita que la biblioteca monopolice el montaje. Sin ellos es al
+# revés: veintidós clips tienen que cubrir ciento sesenta planos, así que el
+# tope sube o el vídeo se queda sin material a mitad.
+MAX_USOS_BIBLIOTECA = 40 if config.SOLO_BIBLIOTECA else 8
 
 _usos_biblioteca: dict[str, int] = {}
 
@@ -882,6 +886,13 @@ def _fetch_source(query: str, generic: str, pool: AssetPool, raw_dir: Path, stat
             stats["biblioteca"] += 1
             USADOS_BIBLIOTECA.add(own.stem)
             return own, False
+
+    # Con SOLO_BIBLIOTECA la cascada acaba aquí. El montador tirará de la
+    # segunda vuelta sobre tus propios clips, que repite encuadres del tema
+    # correcto en vez de traer algo de fuera. Repetir Saturno es mucho menos
+    # grave que enseñar una oficina.
+    if config.SOLO_BIBLIOTECA:
+        return None
 
     # 2. Archivos científicos, con el sujeto concreto.
     for variant in specific:

@@ -128,7 +128,7 @@ Devuelve solo este JSON, sin texto alrededor:
 
     try:
         resp = client().messages.create(
-            model=config.SCRIPT_MODEL,
+            model=config.QC_MODEL,
             max_tokens=1500,
             system=SYSTEM,
             messages=[{"role": "user", "content": [
@@ -262,7 +262,7 @@ Devuelve solo: {{"fuera": [números]}}"""
 
     try:
         resp = client().messages.create(
-            model=config.SCRIPT_MODEL,
+            model=config.QC_MODEL,
             max_tokens=400,
             system=SYSTEM,
             messages=[{"role": "user", "content": [

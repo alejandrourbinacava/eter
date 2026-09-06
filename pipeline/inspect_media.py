@@ -256,6 +256,57 @@ def perceived_motion(video: Path, duration: float,
     return statistics.median(serie), serie
 
 
+def _overlay_estatico(frames: list[Path]) -> float:
+    """Fracción del encuadre ocupada por algo que no cambia NUNCA y tiene filo.
+
+    Es la señal que faltaba contra los rótulos quemados. El detector por
+    brillo solo mira los fotogramas oscuros, porque sobre imagen clara confunde
+    la textura con letras; unas letras blancas sobre la Tierra iluminada caen
+    justo en ese hueco y se colaron dos veces.
+
+    Un rótulo quemado, en cambio, es idéntico píxel a píxel mientras el metraje
+    de debajo se mueve. Eso no lo imita ninguna textura natural, y no cuesta
+    una llamada a nadie: los fotogramas ya están extraídos.
+
+    Devuelve 0 si el clip entero está quieto — ahí no hay nada que comparar y
+    de eso ya se ocupa el control de movimiento.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        return 0.0
+    if len(frames) < 4:
+        return 0.0
+    pila = []
+    for f in frames[:24]:
+        try:
+            with Image.open(f) as img:
+                pila.append(np.asarray(img.convert("L").resize((192, 108)),
+                                       dtype=np.int16))
+        except Exception:
+            return 0.0
+    if len(pila) < 4:
+        return 0.0
+    cubo = np.stack(pila)
+    recorrido = cubo.max(axis=0) - cubo.min(axis=0)
+    quieto = recorrido <= 8
+    # Si casi nada se mueve, el clip es una foto: este test no aplica.
+    if quieto.mean() > 0.90:
+        return 0.0
+    # Filo: los trazos de una letra tienen un salto fuerte contra su fondo.
+    medio = cubo.mean(axis=0)
+    gx = np.abs(np.diff(medio, axis=1, prepend=medio[:, :1]))
+    gy = np.abs(np.diff(medio, axis=0, prepend=medio[:1, :]))
+    filo = (gx + gy) > 34
+    return float((quieto & filo).mean())
+
+
+# Por encima de esto, hay un rótulo pegado al encuadre. Calibrado sobre la
+# biblioteca entera —material limpio— y sobre un clip con texto sobreimpreso.
+MAX_OVERLAY = 0.020
+
+
 def clean_windows(video: Path, duration: float, min_len: float,
                   strict: bool = True,
                   permitir_quieto: bool = False) -> list[list[float]]:

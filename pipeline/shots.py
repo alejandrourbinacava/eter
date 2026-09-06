@@ -200,6 +200,10 @@ class ClipBank:
     def _cap(self) -> int:
         if not self._total_shots:
             return 10**6
+        # Sin bancos de stock detrás no hay a quién recurrir: el tope por
+        # fuente tiene que dar para cubrir el vídeo con lo que hay.
+        if config.SOLO_BIBLIOTECA:
+            return max(6, int(self._total_shots * 0.14))
         return max(3, int(self._total_shots * self._max_share))
 
     def _charge(self, source: Source) -> bool:

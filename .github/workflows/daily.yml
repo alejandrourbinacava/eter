@@ -175,7 +175,7 @@ jobs:
               echo "Falta $G o $P"; exit 1
             fi
             echo "Produciendo desde guion propio: $G"
-            ETER_QC=0 python scripts/from_script.py "$G" --plan "$P"
+            ETER_QC=0 ETER_SOLO_BIBLIOTECA=1 python scripts/from_script.py "$G" --plan "$P"
           else
             TEMA=""
             if [ -n "${{ inputs.tema }}" ]; then TEMA="--topic ${{ inputs.tema }}"; fi

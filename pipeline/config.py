@@ -70,6 +70,18 @@ SCENE_GAP = 0.45
 # donde se nota el modelo. Aquí no se ahorra.
 SCRIPT_MODEL = os.getenv("ETER_SCRIPT_MODEL", "claude-opus-5")
 
+# El control de calidad solo mira hojas de miniaturas y responde con una lista
+# de índices. Para eso no hace falta el modelo que escribe el guion: Haiku hace
+# el mismo trabajo por una fracción. Medido sobre este vídeo: 20 llamadas,
+# 7 céntimos con Haiku contra bastante más con Opus.
+QC_MODEL = os.getenv("ETER_QC_MODEL", "claude-haiku-4-5-20251001")
+
+# Solo el material propio: nada de bancos de stock ni de archivos ajenos. Es
+# la única garantía real de que no aparezca un «HAPPY NEW YEAR», una mezquita
+# ni dos oficinistas, porque esa basura viene siempre de fuera. Se paga con
+# repetición: veintidós clips para ciento sesenta planos.
+SOLO_BIBLIOTECA = os.getenv("ETER_SOLO_BIBLIOTECA", "0") not in ("0", "false", "no")
+
 # El plan también va con Opus por decisión del canal. Se probó Sonnet aquí
 # —es rellenar un JSON con el guion ya escrito delante— y ahorraba unos 2 € al
 # mes, que no compensa arriesgar la calidad de los títulos y las búsquedas.
