@@ -70,6 +70,14 @@ MIN_SOURCE_MOTION = 3.5
 # zoom que él mismo aplicaba y las daba por buenas.
 MAX_STILL_SHARE = 0.15
 
+# Sin bancos de stock la cuenta cambia. Para el vídeo de Saturno solo hay nueve
+# clips del tema y cinco son fotografías, así que con el 15 % los materiales
+# afines solo llegaban a 112 planos de los 160 que hace falta servir: los otros
+# 48 se iban a material fuera de tema, y por ahí salían los agujeros negros.
+# Una foto de Saturno con la cámara forzada es infinitamente mejor que un
+# agujero negro con movimiento propio.
+MAX_STILL_SHARE_PROPIO = 0.40
+
 
 @dataclass
 class Source:
@@ -220,7 +228,7 @@ class ClipBank:
         # Sin bancos de stock detrás no hay a quién recurrir: el tope por
         # fuente tiene que dar para cubrir el vídeo con lo que hay.
         if config.SOLO_BIBLIOTECA:
-            return max(6, int(self._total_shots * 0.14))
+            return max(6, int(self._total_shots * 0.16))
         return max(3, int(self._total_shots * self._max_share))
 
     def _charge(self, source: Source) -> bool:
@@ -243,7 +251,8 @@ class ClipBank:
         """
         if not (source.still or source.is_image) or not self._total_shots:
             return True
-        tope = max(2, int(self._total_shots * MAX_STILL_SHARE))
+        cuota = MAX_STILL_SHARE_PROPIO if config.SOLO_BIBLIOTECA else MAX_STILL_SHARE
+        tope = max(2, int(self._total_shots * cuota))
         if self._quietos >= tope:
             return False
         self._quietos += 1
