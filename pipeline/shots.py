@@ -140,6 +140,23 @@ class ClipBank:
     # Con 0.22 un solo clip podía cubrir 42 planos de 194. Medido en el vídeo
     # de la estrella de neutrones: el más repetido salía 23 veces y ni
     # siquiera rozaba el tope. Con 0.06 son 11 de 194.
+    def set_afinidad(self, fn) -> None:
+        """fn(Path) -> bool: ¿este material pega con el tema del vídeo?
+
+        Solo se consulta en el banco general, cuando una búsqueda se queda sin
+        material propio. Ahí antes entraba cualquier cosa.
+        """
+        self._afinidad = fn
+
+    def _pega(self, source: Source) -> bool:
+        fn = getattr(self, "_afinidad", None)
+        if fn is None:
+            return True
+        try:
+            return bool(fn(source.path))
+        except Exception:  # noqa: BLE001
+            return True
+
     def set_screen(self, screen) -> None:
         """screen(list[Path]) -> set[int]: índices que no pegan con el tema.
 
@@ -347,10 +364,18 @@ class ClipBank:
                 self._last = source
                 return source.path, start, source.is_image
 
-        # 5. Solo ahora, material de otras búsquedas.
+        # 5. Solo ahora, material de otras búsquedas. Es la puerta por la que
+        #    se colaban cuatro planos de agujero negro en el vídeo de Saturno:
+        #    el reparto por búsqueda sí mira el tema, pero aquí se ordenaba por
+        #    presupuesto y entraba cualquier cosa del banco. Se prueban primero
+        #    las fuentes que pegan con el vídeo, y las demás solo si no queda
+        #    otra.
         log.debug("  «%s» sin material propio, se recurre al banco general", query[:38])
         pool = [s for s in self._all if not s.is_image and s not in mine]
-        for candidates in ([s for s in pool if s is not self._last], pool):
+        afines = [s for s in pool if self._pega(s)]
+        resto = [s for s in pool if not self._pega(s)]
+        for candidates in ([s for s in afines if s is not self._last], afines,
+                           [s for s in resto if s is not self._last], resto):
             for source in sorted(candidates, key=lambda s: self._budget.get(id(s), 0)):
                 served = self._serve(source, want)
                 if served:

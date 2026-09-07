@@ -1044,6 +1044,27 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         tema = (scenes[0].visual_query if scenes else "") or "documental espacial"
     bank.set_screen(lambda rutas: quality.criba(rutas, tema, workdir))
 
+    # Qué carpetas de la biblioteca pegan con ESTE vídeo. Se mira contra todas
+    # las búsquedas del plan, no contra la del plano: el vídeo entero habla de
+    # Saturno aunque un plano concreto pida «hot dense center». Es lo que
+    # impide que el banco general reparta agujeros negros.
+    temas_video = set()
+    for sc in scenes:
+        temas_video |= _tokens(sc.visual_query or "")
+        for g in (getattr(sc, "visual_generic", None) or []):
+            temas_video |= _tokens(g)
+    raices = {t.rstrip("s") for t in temas_video}
+
+    def _pega_con_el_video(ruta) -> bool:
+        from pathlib import Path as _P
+        partes = _P(ruta).parts
+        if "library" not in partes:
+            return True          # el stock ya lo filtra _is_space_clip
+        etiquetas = _tokens(_P(ruta).parent.name) | _tokens(_P(ruta).stem)
+        return bool({t.rstrip("s") for t in etiquetas} & raices)
+
+    bank.set_afinidad(_pega_con_el_video)
+
     log.info("Montaje: %d planos de %.0f-%.0f s para %d escenas, %d búsquedas distintas",
              len(plan), config.SHOT_MIN, config.SHOT_MAX, len(scenes), len(subjects))
     if len(subjects) < len(scenes):
