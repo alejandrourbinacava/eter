@@ -90,7 +90,7 @@ scenes:
     emphasis: Es un océano de metal líquido sin orilla y sin fondo visible.
   9:
     query: saturn core rock ice
-    generic: [saturn against black space, gas giant full disc, saturn rings edge on, ringed planet in darkness]
+    generic: [saturn full disc in space, gas giant full disc, saturn rings edge on, ringed planet in darkness]
     emphasis: Es una imposibilidad física.
   10:
     query: saturn rings particles ice

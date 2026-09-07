@@ -1061,7 +1061,11 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         if "library" not in partes:
             return True          # el stock ya lo filtra _is_space_clip
         etiquetas = _tokens(_P(ruta).parent.name) | _tokens(_P(ruta).stem)
-        return bool({t.rstrip("s") for t in etiquetas} & raices)
+        comun = {t.rstrip("s") for t in etiquetas} & raices
+        # Las mismas palabras débiles que en _library: «ice chunks orbiting»
+        # compartía «orbiting» con «stars-orbiting-galactic-center» y por ahí
+        # el banco general seguía dando agujeros negros.
+        return bool(comun - {d.rstrip("s") for d in _ETIQUETAS_DEBILES})
 
     bank.set_afinidad(_pega_con_el_video)
 
