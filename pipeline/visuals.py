@@ -1191,8 +1191,10 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
                     congelados, len(plan))
     else:
         log.info("Ningún plano queda congelado.")
+    _cuota = (shots.MAX_STILL_SHARE_PROPIO if config.SOLO_BIBLIOTECA
+              else shots.MAX_STILL_SHARE)
     log.info("Planos de material sin movimiento propio: %d de %d (tope %d%%)",
-             bank.still_shots, len(plan), int(shots.MAX_STILL_SHARE * 100))
+             bank.still_shots, len(plan), int(_cuota * 100))
     if stats["generado"] >= config.MAX_GENERATED:
         log.warning(
             "Se alcanzó el tope de %d planos generados. A partir de ahí se ha "
