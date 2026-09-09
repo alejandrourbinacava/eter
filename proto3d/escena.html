@@ -147,6 +147,15 @@ function guia(x1, y1, x2, y2, alfa) {
   // cambiar de sitio la cámara, no buscar otro clip.
   if (TIPO === "hero") {
     const V = +(new URLSearchParams(location.search).get("v") || 0);
+    // Cada variante lleva ADEMÁS su propio desfase de Sol y su propio centro de
+    // encuadre. Con el Sol siempre a la misma distancia de la cámara los nueve
+    // planos salían igual de iluminados y se parecían todos; el terminador es
+    // lo que da carácter a cada uno.
+    const LUZ = [-0.35, -1.05, -0.62, -1.45, -0.20, -0.85, -1.25, -0.50, -1.00];
+    const CENTRO = [
+      [0, 0], [0.25, 0.10], [-0.30, -0.06], [0.18, -0.14], [0, 0.16],
+      [-0.22, 0.08], [0.32, 0], [-0.15, -0.12], [0.10, 0.14],
+    ];
     const VARIANTES = [
       // [ángulo inicial, recorrido, distancia inicial, acercamiento, altura inicial, caída, giro]
       [-0.70,  0.78, 6.2, 1.9,  1.35, 0.80, 1.15],  // clásico, se acerca
@@ -161,14 +170,21 @@ function guia(x1, y1, x2, y2, alfa) {
       [ 1.70,  0.74, 5.8, 1.5,  0.95, -0.40, 1.05], // media distancia, sube
     ];
     const [a0, da, d0, dd, h0, dh, giro] = VARIANTES[V % VARIANTES.length];
+    const desfase = LUZ[V % LUZ.length];
+    const [cx, cy] = CENTRO[V % CENTRO.length];
     const sat = haceSaturno(1);
     scene.add(sat);
     animar = (t) => {
       const s = suavizado(t);
       const ang = a0 + s * da, dist = d0 - s * dd, alto = h0 - s * dh;
       camera.position.set(Math.sin(ang) * dist, alto, Math.cos(ang) * dist);
-      camera.lookAt(0, 0, 0);
+      camera.lookAt(cx, cy, 0);
       sat.userData.planeta.rotation.y = t * giro;
+      // El Sol acompaña a la cámara con el desfase de esta variante. Con el Sol
+      // clavado en un sitio, media docena de encuadres miraban la cara nocturna
+      // y salían negros: en un documental se ilumina el plano, no la efeméride.
+      const solAng = ang + desfase;
+      sol.position.set(Math.sin(solAng) * 9, 2.2 + alto * 0.55, Math.cos(solAng) * 9);
     };
   }
 
