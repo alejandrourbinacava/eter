@@ -1116,8 +1116,10 @@ def build_clips(scenes, workdir: Path, pool: AssetPool | None = None) -> list:
         # reforzado sube un plano muerto de 2,3 a 8,1 de movimiento percibido,
         # medido sobre la foto más quieta de la biblioteca.
         for intento in range(4):
-            shot.boost = intento >= 2 or (bank.is_still(shot.source)
-                                          if shot.source else False)
+            # Lo generado en 3D trae su propia cámara; lo demás la recibe.
+            shot.sin_camara = bool(shot.source and "saturn3d" in Path(shot.source).parts)
+            shot.boost = (not shot.sin_camara) and (
+                intento >= 2 or (bank.is_still(shot.source) if shot.source else False))
             try:
                 shots.render_shot(shot, dest, crop)
             except RuntimeError:

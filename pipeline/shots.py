@@ -52,6 +52,12 @@ class Shot:
     # material de archivo). Se compensa con un desplazamiento de cámara mucho
     # más marcado; ver _video_shot.
     boost: bool = False
+    # El material generado ya trae su propia cámara: orbita, se acerca y
+    # encuadra el sujeto durante todo el clip. Añadirle el Ken Burns encima
+    # recorta esa composición y empuja al planeta fuera del cuadro — en el
+    # vídeo de Saturno dejaba cinco planos casi negros con un trozo de anillo
+    # en una esquina. Aquí la cámara ya está puesta: no se toca.
+    sin_camara: bool = False
 
 
 # Movimiento percibido por debajo del cual un material NO es metraje: es una
@@ -509,7 +515,9 @@ def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
     # La rampa de escala es suave, no lineal: smoothstep arranca y frena en
     # vez de moverse a velocidad constante, que es lo que hace que un
     # travelling automático se lea como robótico.
-    if shot.boost:
+    if shot.sin_camara:
+        motion = f"scale={config.WIDTH}:{config.HEIGHT}"
+    elif shot.boost:
         # Uno de cada tres se aleja en vez de acercarse: da variedad sin mover
         # el encuadre de sitio, que es lo que mareaba.
         z0, z1 = _BOOST
