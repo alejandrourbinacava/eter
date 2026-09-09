@@ -20,3 +20,10 @@ __pycache__/
 venv/
 .DS_Store
 Thumbs.db
+
+# El prototipo 3D: se versionan las escenas, no lo que descarga o genera.
+proto3d/node_modules/
+proto3d/frames/
+proto3d/tex/
+proto3d/*.mp4
+library/saturn3d/

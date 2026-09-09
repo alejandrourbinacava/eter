@@ -1,0 +1,287 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Escenas 3D — ÉTER</title>
+<style>
+  @font-face { font-family: "Anton"; src: url("../brand/fonts/Anton-Regular.ttf"); }
+  html,body{margin:0;background:#000;overflow:hidden}
+  canvas{display:block}
+  #gl{position:absolute;left:-99999px}   /* el WebGL se compone aparte */
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<body>
+<script>
+// Tres planos que el archivo no puede dar: el interior de Saturno, la
+// comparación de tamaño a escala y un Saturno de portada con la cámara libre.
+//
+// El 3D se dibuja en un canvas oculto y se COMPONE sobre un canvas 2D, que es
+// donde van los rótulos. Así el texto sale con la tipografía del canal y con
+// control real de espaciado, en vez de pegar un PNG encima después.
+
+const W = 1920, H = 1080, FPS = 30;
+const TIPO = new URLSearchParams(location.search).get("tipo") || "hero";
+const SEGUNDOS = +(new URLSearchParams(location.search).get("seg") || 8);
+const TOTAL = FPS * SEGUNDOS;
+
+const ACHATAMIENTO = 54364 / 60268;
+const RING_IN = 1.24, RING_OUT = 2.27;
+const CIAN = "#2BD8FF";
+
+const gl = document.createElement("canvas");
+gl.id = "gl";
+document.body.appendChild(gl);
+const salida = document.createElement("canvas");
+salida.width = W; salida.height = H;
+document.body.appendChild(salida);
+const ctx = salida.getContext("2d");
+
+const renderer = new THREE.WebGLRenderer({canvas: gl, antialias: true, alpha: true,
+                                          preserveDrawingBuffer: true});
+renderer.setSize(W, H);
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, W / H, 0.05, 200);
+
+function textura(url, srgb) {
+  return new Promise(res => new THREE.TextureLoader().load(url, t => {
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8; res(t);
+  }, undefined, () => res(null)));
+}
+
+// --- utilidades de rótulo -------------------------------------------------
+function suavizado(t) { return t * t * (3 - 2 * t); }   // arranca y frena
+
+function rotulo(texto, x, y, tam, alfa, opciones = {}) {
+  if (alfa <= 0.002) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(alfa, 1);
+  ctx.font = `${tam}px Anton, sans-serif`;
+  ctx.textAlign = opciones.align || "left";
+  ctx.textBaseline = "alphabetic";
+  if (opciones.espaciado) ctx.letterSpacing = `${opciones.espaciado}px`;
+  ctx.shadowColor = "rgba(0,0,0,.85)";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = opciones.color || "#fff";
+  ctx.fillText(texto, x, y);
+  ctx.restore();
+}
+
+function guia(x1, y1, x2, y2, alfa) {
+  if (alfa <= 0.002) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(alfa, 1);
+  ctx.strokeStyle = CIAN;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x1, y1, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// --------------------------------------------------------------------------
+(async () => {
+  await document.fonts.load('64px Anton');
+  await document.fonts.ready;
+
+  const [mapaPlaneta, mapaAnillo, mapaCielo, mapaTierra] = await Promise.all([
+    textura("tex/2k_saturn.jpg", true),
+    textura("tex/2k_saturn_ring_alpha.png", true),
+    textura("tex/2k_stars_milky_way.jpg", true),
+    textura("tex/2k_earth_daymap.jpg", true),
+  ]);
+
+  if (mapaCielo) {
+    scene.add(new THREE.Mesh(
+      new THREE.SphereGeometry(120, 48, 32),
+      new THREE.MeshBasicMaterial({map: mapaCielo, side: THREE.BackSide, color: 0x252a33})
+    ));
+  }
+
+  const sol = new THREE.DirectionalLight(0xfff4e2, 3.1);
+  sol.position.set(-4.4, 3.4, 6.6);
+  sol.castShadow = true;
+  sol.shadow.mapSize.set(2048, 2048);
+  Object.assign(sol.shadow.camera, {left: -4, right: 4, top: 4, bottom: -4, near: .5, far: 30});
+  sol.shadow.bias = -0.0006;
+  scene.add(sol);
+  scene.add(new THREE.AmbientLight(0x2b3244, 0.55));
+
+  function haceSaturno(radio = 1) {
+    const g = new THREE.Group();
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(radio, 128, 96),
+      new THREE.MeshStandardMaterial({map: mapaPlaneta, roughness: 1, metalness: 0})
+    );
+    p.scale.set(1, ACHATAMIENTO, 1);
+    p.castShadow = p.receiveShadow = true;
+    g.add(p);
+
+    const geo = new THREE.RingGeometry(RING_IN * radio, RING_OUT * radio, 256, 1);
+    const pos = geo.attributes.position, uv = geo.attributes.uv, v = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      uv.setXY(i, (v.length() - RING_IN * radio) / ((RING_OUT - RING_IN) * radio), 0.5);
+    }
+    const a = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      map: mapaAnillo, transparent: true, side: THREE.DoubleSide,
+      roughness: 1, metalness: 0, alphaTest: 0.35,
+      emissive: 0xffffff, emissiveMap: mapaAnillo, emissiveIntensity: 0.18,
+    }));
+    a.rotation.x = -Math.PI / 2;
+    a.castShadow = a.receiveShadow = true;
+    g.add(a);
+    g.userData.planeta = p;
+    return g;
+  }
+
+  let animar;
+
+  // ---------------- PLANO 1: Saturno, con variantes ----------------------
+  // El parámetro `v` da un encuadre distinto: el montaje necesita muchos
+  // planos del mismo planeta que no se parezcan entre sí, y aquí eso es
+  // cambiar de sitio la cámara, no buscar otro clip.
+  if (TIPO === "hero") {
+    const V = +(new URLSearchParams(location.search).get("v") || 0);
+    const VARIANTES = [
+      // [ángulo inicial, recorrido, distancia inicial, acercamiento, altura inicial, caída, giro]
+      [-0.70,  0.78, 6.2, 1.9,  1.35, 0.80, 1.15],  // clásico, se acerca
+      [ 1.05, -0.62, 5.4, 1.1,  0.42, -0.55, 0.90], // rasante, sube sobre el anillo
+      [ 2.30,  0.55, 7.1, 2.4,  2.10, 1.35, 1.40],  // picado que baja al plano
+      [-2.05, -0.70, 4.6, 0.8,  0.16, -0.30, 0.75], // anillos casi de canto
+      [ 0.35,  0.90, 8.0, 3.1,  1.05, 0.55, 1.60],  // muy lejos y entra
+      [-1.35,  0.48, 5.0, 1.3,  2.55, 1.70, 0.95],  // desde arriba al ecuador
+      [ 2.85, -0.85, 6.6, 1.6, -0.85, -0.75, 1.25], // desde debajo del anillo
+      [ 0.10, -0.52, 4.2, 0.6,  0.62, 0.25, 0.70],  // cerca, giro corto
+      [-2.60,  0.66, 7.4, 2.7,  1.70, 1.10, 1.30],  // amplio, cruza el terminador
+      [ 1.70,  0.74, 5.8, 1.5,  0.95, -0.40, 1.05], // media distancia, sube
+    ];
+    const [a0, da, d0, dd, h0, dh, giro] = VARIANTES[V % VARIANTES.length];
+    const sat = haceSaturno(1);
+    scene.add(sat);
+    animar = (t) => {
+      const s = suavizado(t);
+      const ang = a0 + s * da, dist = d0 - s * dd, alto = h0 - s * dh;
+      camera.position.set(Math.sin(ang) * dist, alto, Math.cos(ang) * dist);
+      camera.lookAt(0, 0, 0);
+      sat.userData.planeta.rotation.y = t * giro;
+    };
+  }
+
+  // ---------------- PLANO 2: la escala real ------------------------------
+  // Saturno tiene 9,45 veces el radio de la Tierra. Se dibujan a esa escala y
+  // se rotula: es el plano que hace que la cifra signifique algo.
+  if (TIPO === "escala") {
+    const RS = 1.0, RT = RS / 9.45;
+    const sat = haceSaturno(RS);
+    sat.position.x = 0.55;
+    scene.add(sat);
+
+    const tierra = new THREE.Mesh(
+      new THREE.SphereGeometry(RT, 64, 48),
+      new THREE.MeshStandardMaterial({map: mapaTierra, roughness: 1, metalness: 0})
+    );
+    tierra.position.set(-2.55, 0.02, 0.35);
+    tierra.castShadow = tierra.receiveShadow = true;
+    scene.add(tierra);
+
+    animar = (t) => {
+      const s = suavizado(t);
+      const dist = 9.3 - s * 2.4;
+      camera.position.set(-0.35 + s * 0.55, 0.92 - s * 0.72, dist);
+      camera.lookAt(-0.35 + s * 0.30, 0, 0);
+      sat.userData.planeta.rotation.y = t * 0.7;
+      tierra.rotation.y = t * 1.6;
+    };
+    dibujaRotulos = (t) => {
+      const a1 = Math.min(Math.max((t - 0.06) * 5, 0), 1);
+      const a2 = Math.min(Math.max((t - 0.30) * 5, 0), 1);
+      guia(322, 604, 322, 700, a1);
+      rotulo("LA TIERRA", 322, 748, 46, a1, {align: "center", espaciado: 6});
+      rotulo("A ESCALA", 322, 792, 26, a1, {align: "center", espaciado: 5, color: "#9AA6B2"});
+      rotulo("SATURNO", 1330, 906, 92, a2, {align: "center", espaciado: 14});
+      rotulo("9,45 VECES EL RADIO DE LA TIERRA", 1330, 952, 30, a2,
+             {align: "center", espaciado: 4, color: CIAN});
+    };
+  }
+
+  // ---------------- PLANO 3: el interior ---------------------------------
+  // La escena que ningún archivo puede dar. Un corte con las capas a su
+  // profundidad real, rotuladas.
+  if (TIPO === "interior") {
+    const CAPAS = [
+      {r: 1.00, color: 0xd8c193, nombre: "NUBES DE AMONÍACO",     dato: "−178 °C"},
+      {r: 0.78, color: 0x9c7d4e, nombre: "HIDRÓGENO MOLECULAR",   dato: "el gas se espesa"},
+      {r: 0.46, color: 0x6f7fa8, nombre: "HIDRÓGENO METÁLICO",    dato: "conduce como el cobre"},
+      {r: 0.18, color: 0xff8a3d, nombre: "NÚCLEO DE ROCA Y HIELO", dato: "11.700 °C"},
+    ];
+    // El corte se hace con un plano de recorte, no partiendo la geometría: así
+    // cada capa queda abierta por la misma cara y se ve el interior de verdad.
+    // Con media esfera se veía la cáscara exterior por fuera y no se distinguía
+    // ninguna capa.
+    renderer.localClippingEnabled = true;
+    const cuchillo = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+
+    const grupo = new THREE.Group();
+    CAPAS.forEach((capa, i) => {
+      const g = new THREE.SphereGeometry(capa.r, 96, 72);
+      const m = new THREE.MeshStandardMaterial({
+        color: capa.color, roughness: 0.85, metalness: i === 2 ? 0.55 : 0.0,
+        emissive: capa.color, emissiveIntensity: i === 3 ? 0.75 : 0.10,
+        side: THREE.DoubleSide, clippingPlanes: [cuchillo], clipShadows: true,
+      });
+      const malla = new THREE.Mesh(g, m);
+      malla.scale.set(1, ACHATAMIENTO, 1);
+      malla.renderOrder = 10 - i;
+      grupo.add(malla);
+    });
+    grupo.rotation.y = -0.55;
+    scene.add(grupo);
+
+    grupo.rotation.y = 0;
+    animar = (t) => {
+      const s = suavizado(t);
+      // De frente al corte, acercándose y bajando un poco: el ojo entra por
+      // las capas en vez de rodear la esfera.
+      camera.position.set(-0.62 + s * 0.30, 0.95 - s * 0.62, 3.15 - s * 0.95);
+      camera.lookAt(-0.30, 0.05, 0);
+    };
+    dibujaRotulos = (t) => {
+      // Las capas aparecen de fuera adentro, escalonadas.
+      const filas = [
+        {y: 300, texto: CAPAS[0].nombre, dato: CAPAS[0].dato, x: 1180, en: 0.05},
+        {y: 468, texto: CAPAS[1].nombre, dato: CAPAS[1].dato, x: 1250, en: 0.24},
+        {y: 636, texto: CAPAS[2].nombre, dato: CAPAS[2].dato, x: 1320, en: 0.43},
+        {y: 804, texto: CAPAS[3].nombre, dato: CAPAS[3].dato, x: 1390, en: 0.62},
+      ];
+      for (const f of filas) {
+        const a = Math.min(Math.max((t - f.en) * 6, 0), 1);
+        guia(f.x - 210, f.y - 14, f.x - 40, f.y - 14, a);
+        rotulo(f.texto, f.x, f.y, 40, a, {espaciado: 3});
+        rotulo(f.dato, f.x, f.y + 38, 27, a, {espaciado: 2, color: CIAN});
+      }
+    };
+  }
+
+  // --- bucle de captura ---------------------------------------------------
+  const marcos = [];
+  for (let f = 0; f < TOTAL; f++) {
+    const t = f / (TOTAL - 1);
+    animar(t);
+    renderer.render(scene, camera);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(gl, 0, 0, W, H);
+    if (typeof dibujaRotulos === "function") dibujaRotulos(t);
+    marcos.push(salida.toDataURL("image/png"));
+  }
+  window.__marcos = marcos;
+  window.__listo = true;
+})();
+
+var dibujaRotulos = null;
+</script>

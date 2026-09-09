@@ -55,7 +55,7 @@ scenes:
   0:
     query: saturn rings cassini
     generic: [saturn planet rings, ringed planet space, saturn from orbit, planet with rings rotating]
-    emphasis: Sabemos tanto de Saturno que parece razonable preguntarse cuándo bajaremos.
+    emphasis: parece razonable preguntarse cuándo bajaremos
   1:
     query: saturn cloud tops
     generic: [gas giant clouds, planet surface from orbit, rocky planet surface, planet atmosphere layers]
@@ -63,7 +63,7 @@ scenes:
   2:
     query: saturn atmosphere layers
     generic: [planet cloud bands, gas planet close up, planet limb from space, atmosphere edge planet]
-    emphasis: Una línea dibujada en el aire para poder hacer cuentas.
+    emphasis: Una línea dibujada en el aire
   3:
     query: saturn clouds ammonia
     generic: [swirling planet clouds, storm bands gas giant, cold planet distant sun, planet clouds moving]
@@ -75,7 +75,7 @@ scenes:
   5:
     query: saturn great white spot storm
     generic: [giant storm on gas giant, jupiter great red spot, storm bands gas giant planet, turbulent gas giant atmosphere]
-    emphasis: Fue el sistema tormentoso más grande jamás observado en el sistema solar.
+    emphasis: el sistema tormentoso más grande
   6:
     query: saturn hexagon north pole
     generic: [gas giant polar vortex from space, saturn north pole hexagon, gas giant cloud bands from orbit, jupiter polar storms]
@@ -87,7 +87,7 @@ scenes:
   8:
     query: metallic hydrogen saturn
     generic: [saturn night side, gas giant dark limb, saturn from orbit close, jupiter deep clouds]
-    emphasis: Es un océano de metal líquido sin orilla y sin fondo visible.
+    emphasis: un océano de metal líquido
   9:
     query: saturn core rock ice
     generic: [saturn full disc in space, gas giant full disc, saturn rings edge on, ringed planet in darkness]
@@ -99,15 +99,15 @@ scenes:
   11:
     query: cassini grand finale dives
     generic: [spacecraft near planet, probe between rings, satellite orbiting planet, spacecraft antenna space]
-    emphasis: Un pasillo de dos mil kilómetros que nadie había atravesado nunca.
+    emphasis: dos mil kilómetros que nadie había atravesado
   12:
     query: cassini final plunge saturn
     generic: [spacecraft burning atmosphere, probe entering planet, satellite disintegrating, spacecraft falling]
-    emphasis: Aguantó cerca de un minuto antes de que la fricción la desintegrara por completo.
+    emphasis: Aguantó cerca de un minuto
   13:
     query: galileo probe jupiter descent
     generic: [probe with parachute, capsule entering atmosphere, gas giant clouds descent, jupiter cloud bands]
-    emphasis: En Saturno, el núcleo sólido está cincuenta mil kilómetros más abajo.
+    emphasis: cincuenta mil kilómetros más abajo
   14:
     query: saturn atmosphere descent view
     generic: [gas giant yellow cloud bands, saturn seen from orbit, gas giant cloud tops from space, planet atmosphere from orbit]
@@ -123,4 +123,4 @@ scenes:
   17:
     query: saturn full view rings
     generic: [saturn rings distant, saturn rotating in space, saturn wide shot, ringed gas giant starfield]
-    emphasis: El planeta que cualquier niño sabe dibujar es también el único lugar del sistema solar donde la idea de llegar al suelo no tiene sentido.
+    emphasis: no tiene sentido

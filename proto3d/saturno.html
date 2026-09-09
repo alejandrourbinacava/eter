@@ -1,0 +1,138 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Saturno 3D</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<body>
+<script>
+// Prototipo: Saturno en Three.js con texturas reales.
+//
+// La geometría es la de verdad, igual que en el renderizador de numpy, pero
+// aquí la resuelve la GPU: achatamiento 54.364/60.268, los anillos con sus
+// radios en radios ecuatoriales y la División de Cassini en su sitio, y las
+// dos sombras que hacen que se lea como un mundo — la del planeta sobre los
+// anillos y la banda de los anillos sobre las nubes.
+
+const W = 1920, H = 1080, FPS = 30, SEGUNDOS = 8;
+const TOTAL = FPS * SEGUNDOS;
+
+const ACHATAMIENTO = 54364 / 60268;   // Saturno no es una esfera
+const R = 1.0;                         // radio ecuatorial
+const RING_IN = 1.24, RING_OUT = 2.27; // anillo C interior a anillo A exterior
+
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setSize(W, H);
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
+
+const cargador = new THREE.TextureLoader();
+const pendientes = [];
+function textura(url, srgb) {
+  return new Promise(res => {
+    cargador.load(url, t => {
+      if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 8;
+      res(t);
+    }, undefined, () => res(null));
+  });
+}
+
+(async () => {
+  const [mapaPlaneta, mapaAnillo, mapaCielo] = await Promise.all([
+    textura("tex/2k_saturn.jpg", true),
+    textura("tex/2k_saturn_ring_alpha.png", true),
+    textura("tex/2k_stars_milky_way.jpg", true),
+  ]);
+
+  // Fondo estrellado: la Vía Láctea real, muy atenuada para que no compita.
+  if (mapaCielo) {
+    mapaCielo.mapping = THREE.EquirectangularReflectionMapping;
+    const cielo = new THREE.Mesh(
+      new THREE.SphereGeometry(60, 48, 32),
+      new THREE.MeshBasicMaterial({map: mapaCielo, side: THREE.BackSide,
+                                   color: 0x2a2f38})
+    );
+    scene.add(cielo);
+  }
+
+  // El planeta, achatado en su proporción real.
+  const planeta = new THREE.Mesh(
+    new THREE.SphereGeometry(R, 128, 96),
+    new THREE.MeshStandardMaterial({map: mapaPlaneta, roughness: 1.0, metalness: 0.0})
+  );
+  planeta.scale.set(1, ACHATAMIENTO, 1);
+  planeta.castShadow = true;      // proyecta su sombra sobre los anillos
+  planeta.receiveShadow = true;   // y recibe la banda de sombra de los anillos
+  scene.add(planeta);
+
+  // Los anillos. La geometría de anillo de Three reparte las UV por ángulo, no
+  // por radio, así que hay que reescribirlas: si no, la textura sale girada
+  // alrededor del planeta en vez de extenderse hacia fuera.
+  const geoAnillo = new THREE.RingGeometry(RING_IN, RING_OUT, 256, 1);
+  const pos = geoAnillo.attributes.position;
+  const uv = geoAnillo.attributes.uv;
+  const v3 = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v3.fromBufferAttribute(pos, i);
+    const t = (v3.length() - RING_IN) / (RING_OUT - RING_IN);
+    uv.setXY(i, t, 0.5);
+  }
+  // NO se pone alphaMap: en Three el alphaMap lee el canal VERDE, no el alfa,
+  // así que la transparencia salía gobernada por el color y los anillos se
+  // veían negros. La textura ya trae su propio alfa; con transparent basta.
+  //
+  // alphaTest alto es lo que arregla la sombra: un disco entero marcado como
+  // proyector tapaba el planeta con dos franjas negras macizas. Con 0,35 solo
+  // proyecta la parte densa del anillo, que es lo que hace en la realidad.
+  const anillos = new THREE.Mesh(
+    geoAnillo,
+    new THREE.MeshStandardMaterial({
+      map: mapaAnillo, transparent: true, side: THREE.DoubleSide,
+      roughness: 1.0, metalness: 0.0, alphaTest: 0.35,
+      emissive: 0xffffff, emissiveMap: mapaAnillo, emissiveIntensity: 0.18,
+    })
+  );
+  anillos.rotation.x = -Math.PI / 2;
+  anillos.receiveShadow = true;   // aquí cae la sombra del planeta
+  anillos.castShadow = true;      // y de aquí sale la banda sobre las nubes
+  scene.add(anillos);
+
+  // El Sol: lejano y direccional, con sombras nítidas como en el espacio.
+  const sol = new THREE.DirectionalLight(0xfff4e2, 3.1);
+  sol.position.set(-4.4, 3.4, 6.6);
+  sol.castShadow = true;
+  sol.shadow.mapSize.set(2048, 2048);
+  const c = sol.shadow.camera;
+  c.left = -3.2; c.right = 3.2; c.top = 3.2; c.bottom = -3.2;
+  c.near = 0.5; c.far = 20;
+  sol.shadow.bias = -0.0006;
+  scene.add(sol);
+  // Un relleno mínimo: en el espacio la cara oscura no es negro absoluto,
+  // rebota algo de luz de los propios anillos.
+  scene.add(new THREE.AmbientLight(0x2b3244, 0.55));
+
+  // Animación: la cámara orbita despacio y se acerca, y el planeta gira.
+  const marcos = [];
+  for (let f = 0; f < TOTAL; f++) {
+    const t = f / (TOTAL - 1);
+    const ang = -0.70 + t * 0.78;
+    const dist = 6.2 - t * 1.9;
+    const alto = 1.35 - t * 0.80;
+    camera.position.set(Math.sin(ang) * dist, alto, Math.cos(ang) * dist);
+    camera.lookAt(0, 0, 0);
+    planeta.rotation.y = t * 1.15;
+    renderer.render(scene, camera);
+    marcos.push(renderer.domElement.toDataURL("image/png"));
+  }
+  window.__marcos = marcos;
+  window.__listo = true;
+})();
+</script>

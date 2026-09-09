@@ -27,6 +27,12 @@ LINE_HEIGHT = 0.085       # alto de línea
 CENTER_Y = 0.78           # centro vertical: bajo, para no tapar el motivo
 FADE = 0.45               # entrada y salida, en segundos
 MAX_CHARS = 42            # por línea antes de partir
+# Un rótulo es un remate, no un párrafo. Con 25 palabras salieron cuatro
+# líneas ocupando media pantalla, desvaneciéndose escalonadas: ilegible y feo.
+# Por encima de este tope no se pone rótulo — la frase la sigue diciendo el
+# subtítulo karaoke, que para eso está.
+MAX_PALABRAS_ROTULO = 9
+
 MIN_SECONDS = 1.6
 MAX_SECONDS = 4.5
 
@@ -95,6 +101,10 @@ def plan_captions(scenes) -> list[tuple[float, float, str]]:
         reloj += scene.duration + config.SCENE_GAP
 
         for frase in (scene.emphasis or [])[:1]:
+            if len(frase.split()) > MAX_PALABRAS_ROTULO:
+                log.debug("  rótulo descartado por largo (%d palabras): %s…",
+                          len(frase.split()), frase[:44])
+                continue
             dentro = _locate(scene, frase)
             if dentro is None:
                 continue
