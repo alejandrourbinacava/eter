@@ -492,7 +492,13 @@ _PUSHES = (
 # lo apruebe. Con este —45 % de escala y un barrido en diagonal— el mismo clip
 # pasa de 2,3 a 8,1 de movimiento percibido, medido sobre la foto más muerta de
 # la biblioteca.
-_BOOST = (1.00, 1.45)
+# Acercamiento para el material que no se mueve solo. CENTRADO y sin
+# desplazamiento lateral: la versión anterior barría el encuadre de esquina a
+# esquina —un 31 % del ancho— y encima alternaba el sentido en cada plano. Con
+# 64 planos de 160 usándolo, el vídeo entero se zarandeaba de un lado a otro y
+# mareaba. Un empuje limpio da movimiento de sobra: medido sobre la foto más
+# muerta de la biblioteca, 4,5 contra el umbral de 2,0.
+_BOOST = (1.00, 1.34)
 
 
 def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
@@ -504,15 +510,15 @@ def _video_shot(shot: Shot, dest: Path, autocrop: str = "") -> None:
     # vez de moverse a velocidad constante, que es lo que hace que un
     # travelling automático se lea como robótico.
     if shot.boost:
-        # El sentido del barrido alterna para que dos fotos seguidas no se
-        # muevan igual.
+        # Uno de cada tres se aleja en vez de acercarse: da variedad sin mover
+        # el encuadre de sitio, que es lo que mareaba.
         z0, z1 = _BOOST
-        signo = (shot.scene_index + shot.index) % 4
-        x = f"(iw-iw/zoom)*on/{frames}" if signo in (0, 3) else f"(iw-iw/zoom)*(1-on/{frames})"
-        y = f"(ih-ih/zoom)*0.5*on/{frames}" if signo < 2 else f"(ih-ih/zoom)*(1-0.5*on/{frames})"
+        if (shot.scene_index + shot.index) % 3 == 2:
+            z0, z1 = z1, z0
         motion = (
             f"scale={w2}:{h2},"
-            f"zoompan=z='{z0}+({z1}-{z0})*(pow(on/{frames},2)*(3-2*(on/{frames})))':d={frames}:x='{x}':y='{y}'"
+            f"zoompan=z='{z0}+({z1}-{z0})*(pow(on/{frames},2)*(3-2*(on/{frames})))':d={frames}"
+            f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
             f":s={config.WIDTH}x{config.HEIGHT}:fps={config.FPS}"
         )
     elif name == "flat":
