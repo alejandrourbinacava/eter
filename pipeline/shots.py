@@ -151,6 +151,14 @@ class ClipBank:
     # contiguas del mismo clip y se parecen tanto que el corte no se nota.
     SOURCES_PER_QUERY = 3
 
+    @property
+    def _por_consulta(self) -> int:
+        # Sin bancos de stock hay pocas fuentes y todas son buenas: reunir más
+        # por búsqueda es lo que reparte el peso. Con tres, las consultas se
+        # quedaban con los mismos tres clips y el resto de la biblioteca —los
+        # planos generados incluidos— apenas salía.
+        return 6 if config.SOLO_BIBLIOTECA else self.SOURCES_PER_QUERY
+
     # Con 0.22 un solo clip podía cubrir 42 planos de 194. Medido en el vídeo
     # de la estrella de neutrones: el más repetido salía 23 veces y ni
     # siquiera rozaba el tope. Con 0.06 son 11 de 194.
@@ -204,7 +212,11 @@ class ClipBank:
         self._all: list[Source] = []
         self._exhausted: set[str] = set()
         self._max_share = max_share
-        self._budget: dict[int, int] = {}
+        # Por RUTA, no por objeto: el mismo clip entra como fuente nueva en
+        # cada búsqueda que lo encuentra, así que contando por objeto cada copia
+        # tenía su propio tope. Nueve copias con tope nueve son ochenta y dos
+        # planos de ciento sesenta para un solo fichero, que es lo que pasó.
+        self._budget: dict[str, int] = {}
         self._total_shots = 0
         self._last: Source | None = None
         self._screen = None
@@ -238,12 +250,12 @@ class ClipBank:
         return max(3, int(self._total_shots * self._max_share))
 
     def _charge(self, source: Source) -> bool:
-        used = self._budget.get(id(source), 0)
+        used = self._budget.get(str(source.path), 0)
         if used >= self._cap():
             return False
         if not self._cabe_quieto(source):
             return False
-        self._budget[id(source)] = used + 1
+        self._budget[str(source.path)] = used + 1
         return True
 
     def _cabe_quieto(self, source: Source) -> bool:
@@ -317,7 +329,7 @@ class ClipBank:
             return None
         start = source.take(want)
         if start is None:
-            self._budget[id(source)] -= 1
+            self._budget[str(source.path)] -= 1
             return None
         self._last = source
         return source.path, start, source.is_image
@@ -327,7 +339,7 @@ class ClipBank:
         # 1. Reunir variedad antes de repartir: mientras esta búsqueda no tenga
         #    unas cuantas fuentes propias, se trae otra.
         mine = self._by_query.setdefault(query, [])
-        if len(mine) < self.SOURCES_PER_QUERY and query not in self._exhausted:
+        if len(mine) < self._por_consulta and query not in self._exhausted:
             got = self._fetch(query)
             if got:
                 self._add(query, *got)
@@ -342,7 +354,7 @@ class ClipBank:
             [s for s in mine if s is not self._last],
             mine,
         ):
-            for source in sorted(candidates, key=lambda s: self._budget.get(id(s), 0)):
+            for source in sorted(candidates, key=lambda s: self._budget.get(str(s.path), 0)):
                 served = self._serve(source, want)
                 if served:
                     return served
@@ -370,14 +382,31 @@ class ClipBank:
         #    grave que enseñar algo que no tiene que ver con lo que se dice: si
         #    la narración habla del Sol, en pantalla tiene que haber Sol aunque
         #    el plano se parezca a otro anterior.
-        for source in sorted(mine, key=lambda s: s.laps):
-            if not self._cabe_quieto(source):
-                continue
-            start = source.rewind(want)
-            if start is not None:
-                self._budget[id(source)] = self._budget.get(id(source), 0) + 1
-                self._last = source
-                return source.path, start, source.is_image
+        #
+        #    Pero con tope y rotando. Sin ninguna de las dos cosas —que es como
+        #    estaba— una sola fuente podía servir planos consecutivos sin
+        #    límite: en el vídeo de Saturno un clip cubrió de 3:36 a 5:54, más
+        #    de dos minutos enseñando el mismo trozo de anillo. Se sirve
+        #    siempre la menos gastada, nunca la del plano anterior, y solo se
+        #    pasa por encima del tope cuando de verdad no queda nada más.
+        #
+        #    Y si toda la lista de esta búsqueda está en el tope, se deja pasar
+        #    al banco general en vez de forzar: con el último recurso sin tope,
+        #    un clip que casaba con media docena de consultas se llevó 82 de
+        #    los 160 planos del vídeo.
+        for candidatos in (
+            [s for s in mine if s is not self._last
+             and self._budget.get(str(s.path), 0) < self._cap()],
+            [s for s in mine if self._budget.get(str(s.path), 0) < self._cap()],
+        ):
+            for source in sorted(candidatos, key=lambda s: self._budget.get(str(s.path), 0)):
+                if not self._cabe_quieto(source):
+                    continue
+                start = source.rewind(want)
+                if start is not None:
+                    self._budget[str(source.path)] = self._budget.get(str(source.path), 0) + 1
+                    self._last = source
+                    return source.path, start, source.is_image
 
         # 5. Solo ahora, material de otras búsquedas. Es la puerta por la que
         #    se colaban cuatro planos de agujero negro en el vídeo de Saturno:
@@ -391,24 +420,30 @@ class ClipBank:
         resto = [s for s in pool if not self._pega(s)]
         for candidates in ([s for s in afines if s is not self._last], afines,
                            [s for s in resto if s is not self._last], resto):
-            for source in sorted(candidates, key=lambda s: self._budget.get(id(s), 0)):
+            for source in sorted(candidates, key=lambda s: self._budget.get(str(s.path), 0)):
                 served = self._serve(source, want)
                 if served:
                     return served
 
         # 6. Imágenes de relleno, si es que hay.
         for source in sorted(
-            (s for s in self._all if s.is_image), key=lambda s: self._budget.get(id(s), 0)
+            (s for s in self._all if s.is_image), key=lambda s: self._budget.get(str(s.path), 0)
         ):
             served = self._serve(source, want)
             if served:
                 return served
 
-        # 7. Última vuelta sobre lo que haya, ya sin tope.
-        for source in sorted(self._all, key=lambda s: (s.is_image, s.laps)):
+        # 7. Última vuelta sobre lo que haya, ya sin tope. Aquí ya no queda
+        #    nada más, pero al menos se reparte: ordenar por `laps` no servía
+        #    porque ese contador va por objeto y el mismo fichero entra como
+        #    fuente distinta en cada búsqueda, así que caía siempre en el mismo.
+        for source in sorted(
+            [s for s in self._all if s is not self._last] or self._all,
+            key=lambda s: (s.is_image, self._budget.get(str(s.path), 0)),
+        ):
             start = source.rewind(want)
             if start is not None:
-                self._budget[id(source)] = self._budget.get(id(source), 0) + 1
+                self._budget[str(source.path)] = self._budget.get(str(source.path), 0) + 1
                 self._last = source
                 return source.path, start, source.is_image
 
